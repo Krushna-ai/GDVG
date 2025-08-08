@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import ContentManagement from './ContentManagement';
+import ReviewManagement from './ReviewManagement';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -81,6 +82,15 @@ const AdminDashboard = ({ darkTheme, onLogout }) => {
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2h4a1 1 0 011 1v1a2 2 0 01-2 2H5a2 2 0 01-2-2V5a1 1 0 011-1h4z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8v12a2 2 0 002 2h10a2 2 0 002-2V8H5z" />
+          </svg>
+        )
+      },
+      {
+        id: 'reviews',
+        name: 'Review Management',
+        icon: (
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
           </svg>
         )
       }
@@ -281,6 +291,7 @@ const AdminDashboard = ({ darkTheme, onLogout }) => {
         {currentSection === 'content' && (
           <ContentManagement darkTheme={darkTheme} onStatsUpdate={fetchStats} />
         )}
+        {currentSection === 'reviews' && <ReviewManagement darkTheme={darkTheme} />}
       </div>
     </div>
   );

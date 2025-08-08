@@ -159,6 +159,11 @@ class ReviewUpdate(BaseModel):
     review_text: Optional[str] = None
     contains_spoilers: Optional[bool] = None
 
+class AdminReviewUpdate(BaseModel):
+    review_text: Optional[str] = None
+    is_featured: Optional[bool] = None
+    contains_spoilers: Optional[bool] = None
+
 class ReviewResponse(BaseModel):
     review: Review
     user: dict  # User info (username, avatar)
@@ -3394,6 +3399,80 @@ async def admin_get_content(
         page=page,
         limit=limit
     )
+
+# Admin Review Management
+@api_router.get("/admin/reviews", response_model=ReviewsListResponse)
+async def admin_get_reviews(
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    search: Optional[str] = None,
+    current_admin: AdminUser = Depends(get_current_admin)
+):
+    """Admin: Get all reviews with optional search"""
+    skip = (page - 1) * limit
+    filter_query = {}
+    if search:
+        filter_query["$or"] = [
+            {"title": {"$regex": search, "$options": "i"}},
+            {"review_text": {"$regex": search, "$options": "i"}},
+        ]
+
+    total = await db.reviews.count_documents(filter_query)
+    cursor = db.reviews.find(filter_query).sort("created_date", -1).skip(skip).limit(limit)
+    reviews = await cursor.to_list(length=limit)
+
+    enriched_reviews = []
+    for review in reviews:
+        if '_id' in review:
+            del review['_id']
+
+        user = await db.users.find_one({"id": review["user_id"]})
+        user_info = {"username": user["username"]} if user else {}
+
+        content = await db.content.find_one({"id": review["content_id"]})
+        content_info = {"title": content["title"]} if content else {}
+
+        enriched_reviews.append({**review, "user": user_info, "content": content_info})
+
+    return ReviewsListResponse(
+        reviews=enriched_reviews,
+        total=total,
+        page=page,
+        limit=limit
+    )
+
+@api_router.put("/admin/reviews/{review_id}", response_model=dict)
+async def admin_update_review(
+    review_id: str,
+    review_data: AdminReviewUpdate,
+    current_admin: AdminUser = Depends(get_current_admin)
+):
+    """Admin: Update a review"""
+    existing_review = await db.reviews.find_one({"id": review_id})
+    if not existing_review:
+        raise HTTPException(status_code=404, detail="Review not found")
+
+    update_data = {k: v for k, v in review_data.dict().items() if v is not None}
+    update_data["updated_at"] = datetime.utcnow()
+
+    await db.reviews.update_one({"id": review_id}, {"$set": update_data})
+
+    return {"message": "Review updated successfully"}
+
+@api_router.delete("/admin/reviews/{review_id}")
+async def admin_delete_review(
+    review_id: str,
+    current_admin: AdminUser = Depends(get_current_admin)
+):
+    """Admin: Delete a review"""
+    result = await db.reviews.delete_one({"id": review_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Review not found")
+
+    # Note: In a real app, you might want to recalculate content average rating here.
+    # For simplicity, we omit that for now.
+
+    return {"message": "Review deleted successfully"}
 
 @api_router.post("/admin/bulk-import", response_model=BulkImportResult)
 async def admin_bulk_import(
