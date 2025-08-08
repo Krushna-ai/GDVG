@@ -92,6 +92,36 @@ const ContentDetailPage = ({ darkTheme }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [copyText, setCopyText] = useState('Copy Link');
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopyText('Copied!');
+      setTimeout(() => setCopyText('Copy Link'), 2000);
+    }, (err) => {
+      console.error('Failed to copy text: ', err);
+    });
+  };
+
+  const handleSocialShare = (platform) => {
+    const url = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent(`Check out ${content.title} on GlobalDramaVerseGuide!`);
+    let shareUrl = '';
+
+    switch (platform) {
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
+        break;
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+        break;
+      default:
+        return;
+    }
+
+    window.open(shareUrl, '_blank', 'noopener,noreferrer');
+  };
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -151,11 +181,36 @@ const ContentDetailPage = ({ darkTheme }) => {
       {/* Banner */}
       <div className="relative h-64 md:h-96 bg-cover bg-center" style={{ backgroundImage: `url(${content.banner_url || content.poster_url})` }}>
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-end pb-8">
-          <h1 className="text-4xl md:text-6xl font-bold text-white shadow-lg">{content.title}</h1>
-          {content.original_title && content.original_title !== content.title && (
-            <p className="text-xl text-gray-300 mt-2">{content.original_title}</p>
-          )}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-end pb-8">
+          <div className="flex-1">
+            <h1 className="text-4xl md:text-6xl font-bold text-white shadow-lg">{content.title}</h1>
+            {content.original_title && content.original_title !== content.title && (
+              <p className="text-xl text-gray-300 mt-2">{content.original_title}</p>
+            )}
+          </div>
+          <div className="relative">
+            <button onClick={() => setIsShareOpen(!isShareOpen)} className={`p-3 rounded-full transition-colors ${darkTheme ? 'bg-gray-800/70 hover:bg-gray-700/90' : 'bg-white/80 hover:bg-white'}`}>
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" /></svg>
+            </button>
+            {isShareOpen && (
+              <div className={`absolute right-0 bottom-full mb-2 w-48 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 ${darkTheme ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className="px-1 py-1">
+                  <button onClick={() => handleSocialShare('twitter')} className={`w-full text-left flex items-center px-4 py-2 text-sm rounded-md ${darkTheme ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
+                    <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                    Twitter
+                  </button>
+                  <button onClick={() => handleSocialShare('facebook')} className={`w-full text-left flex items-center px-4 py-2 text-sm rounded-md ${darkTheme ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
+                    <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.04C6.5 2.04 2 6.53 2 12.06c0 4.98 3.66 9.14 8.44 9.9v-7.03H7.9v-2.87h2.54V9.83c0-2.52 1.5-3.92 3.8-3.92 1.09 0 2.22.19 2.22.19v2.46h-1.29c-1.24 0-1.63.77-1.63 1.57v1.88h2.78l-.45 2.87h-2.33v7.03c4.78-.76 8.44-4.92 8.44-9.9C22 6.53 17.5 2.04 12 2.04z" /></svg>
+                    Facebook
+                  </button>
+                  <button onClick={handleCopyLink} className={`w-full text-left flex items-center px-4 py-2 text-sm rounded-md ${darkTheme ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
+                    <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                    {copyText}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
