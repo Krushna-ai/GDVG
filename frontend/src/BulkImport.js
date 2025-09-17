@@ -148,8 +148,33 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
     setImportResult(null);
 
     try {
+      // Step 1: Preview
+      const preview = await previewFileOnServer(selectedFile);
+      setPreviewData(preview);
+      setConfirmOpen(true);
+    } catch (error) {
+      console.error('Preview error:', error);
+      setImportResult({
+        success: false,
+        total_rows: 0,
+        successful_imports: 0,
+        failed_imports: 0,
+        errors: [error.response?.data?.detail || 'Preview failed'],
+        imported_content: []
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const confirmImport = async () => {
+    if (!selectedFile) return;
+    setUploading(true);
+    try {
       const result = await uploadFileToServer(selectedFile);
       setImportResult(result);
+      setConfirmOpen(false);
+      setPreviewData(null);
       if (result.success && onImportComplete) onImportComplete();
     } catch (error) {
       console.error('Upload error:', error);
