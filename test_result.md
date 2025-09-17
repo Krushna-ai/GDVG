@@ -363,10 +363,12 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Backend: Bulk Import flexible defaults (title-only required)"
-    - "Backend: /api/content/featured and /api/content/search data integrity after import"
-    - "Frontend: BulkImport CSV/XLSX + Google Sheets public link flow"
-  stuck_tasks: []
+    - "Backend: CRITICAL - Implement missing API routes (all endpoints return 404)"
+    - "Backend: Admin authentication and bulk import endpoints"
+    - "Backend: Content CRUD, search, and featured content endpoints"
+  stuck_tasks:
+    - "Admin Bulk Import System"
+    - "Content API endpoints"
   test_all: false
   test_priority: "high_first"
 
