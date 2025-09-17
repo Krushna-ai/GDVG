@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const UserAuth = ({ onLogin, darkTheme, isLogin, setIsLogin }) => {
+const UserAuth = ({ onLogin, darkTheme, isLogin, setIsLogin, onClose }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
