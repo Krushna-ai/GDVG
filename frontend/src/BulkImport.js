@@ -11,6 +11,8 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
   const [importResult, setImportResult] = useState(null);
   const [showTemplate, setShowTemplate] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Sample data for quick template generation
   const sampleData = [
