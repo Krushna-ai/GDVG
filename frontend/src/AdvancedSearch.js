@@ -128,7 +128,7 @@ const AdvancedSearch = ({ darkTheme, onContentClick }) => {
               <svg className="h-4 w-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
                 <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
               </svg>
-              <span className="text-white font-semibold text-sm">{content.rating.toFixed(1)}</span>
+              <span className="text-white font-semibold text-sm">{(content.rating ?? 0).toFixed(1)}</span>
             </div>
           </div>
 
@@ -150,7 +150,7 @@ const AdvancedSearch = ({ darkTheme, onContentClick }) => {
             <span className={`text-sm font-medium ${
               darkTheme ? 'text-gray-300' : 'text-gray-700'
             }`}>
-              {content.year}
+              {content.year ?? 'N.A'}
             </span>
             <span className={`text-xs ${
               darkTheme ? 'text-gray-500' : 'text-gray-400'
@@ -158,7 +158,7 @@ const AdvancedSearch = ({ darkTheme, onContentClick }) => {
             <span className={`text-sm ${
               darkTheme ? 'text-gray-400' : 'text-gray-600'
             }`}>
-              {content.country}
+              {content.country || 'N.A'}
             </span>
           </div>
 

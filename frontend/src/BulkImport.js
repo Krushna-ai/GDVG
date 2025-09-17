@@ -6,6 +6,7 @@ const API = `${BACKEND_URL}/api`;
 
 const BulkImport = ({ darkTheme, onImportComplete }) => {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [googleSheetUrl, setGoogleSheetUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [importResult, setImportResult] = useState(null);
   const [showTemplate, setShowTemplate] = useState(false);
@@ -107,9 +108,23 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
     }
   };
 
+  const uploadFileToServer = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const token = localStorage.getItem('admin_token');
+    const response = await axios.post(`${API}/admin/bulk-import`, formData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  };
+
   const handleUpload = async () => {
     if (!selectedFile) {
-      alert('Please select a file first');
+      alert('Please select a file first or provide a Google Sheets CSV link');
       return;
     }
 
@@ -117,21 +132,9 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
     setImportResult(null);
 
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-
-      const token = localStorage.getItem('admin_token');
-      const response = await axios.post(`${API}/admin/bulk-import`, formData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      setImportResult(response.data);
-      if (response.data.success && onImportComplete) {
-        onImportComplete();
-      }
+      const result = await uploadFileToServer(selectedFile);
+      setImportResult(result);
+      if (result.success && onImportComplete) onImportComplete();
     } catch (error) {
       console.error('Upload error:', error);
       setImportResult({
@@ -140,6 +143,37 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
         successful_imports: 0,
         failed_imports: 0,
         errors: [error.response?.data?.detail || 'Upload failed'],
+        imported_content: []
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const importFromGoogleSheet = async () => {
+    if (!googleSheetUrl || !googleSheetUrl.startsWith('http')) {
+      alert('Please paste a valid public Google Sheets CSV export URL');
+      return;
+    }
+    setUploading(true);
+    setImportResult(null);
+    try {
+      // Fetch CSV text from the public link
+      const resp = await axios.get(googleSheetUrl, { responseType: 'text' });
+      const csvText = typeof resp.data === 'string' ? resp.data : new TextDecoder().decode(resp.data);
+      const blob = new Blob([csvText], { type: 'text/csv' });
+      const file = new File([blob], 'google_sheet.csv', { type: 'text/csv' });
+      const result = await uploadFileToServer(file);
+      setImportResult(result);
+      if (result.success && onImportComplete) onImportComplete();
+    } catch (error) {
+      console.error('Google Sheet import error:', error);
+      setImportResult({
+        success: false,
+        total_rows: 0,
+        successful_imports: 0,
+        failed_imports: 0,
+        errors: [error.response?.data?.detail || 'Failed to fetch Google Sheet CSV. Make sure the link is public and ends with export?format=csv'],
         imported_content: []
       });
     } finally {
@@ -184,7 +218,9 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
   const resetUpload = () => {
     setSelectedFile(null);
     setImportResult(null);
-    document.getElementById('file-input').value = '';
+    setGoogleSheetUrl('');
+    const input = document.getElementById('file-input');
+    if (input) input.value = '';
   };
 
   return (
@@ -225,13 +261,14 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
               <h5 className={`font-medium mb-2 ${
                 darkTheme ? 'text-gray-300' : 'text-gray-700'
               }`}>
-                Supported File Formats:
+                Supported Sources:
               </h5>
               <ul className={`list-disc list-inside text-sm space-y-1 ${
                 darkTheme ? 'text-gray-400' : 'text-gray-600'
               }`}>
                 <li>Excel files (.xlsx, .xls)</li>
                 <li>CSV files (.csv)</li>
+                <li>Google Sheets public CSV link (File → Share → Anyone with link → Use export?format=csv URL)</li>
               </ul>
             </div>
 
@@ -244,9 +281,10 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
               <div className={`text-sm ${
                 darkTheme ? 'text-gray-400' : 'text-gray-600'
               }`}>
-                <code className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs">
-                  title, year, country, content_type, synopsis, rating
+                <code className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
+                  title
                 </code>
+                <span className="ml-2">All other columns are optional; missing values will be treated as N.A or sensible defaults.</span>
               </div>
             </div>
 
@@ -260,7 +298,7 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
                 darkTheme ? 'text-gray-400' : 'text-gray-600'
               }`}>
                 <code className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs">
-                  original_title, episodes, duration, cast, crew, streaming_platforms, tags, poster_url, banner_url
+                  original_title, synopsis, year, country, content_type, genres, rating, episodes, duration, cast, crew, streaming_platforms, tags, poster_url, banner_url
                 </code>
               </div>
             </div>
@@ -269,29 +307,15 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
               <h5 className={`font-medium mb-2 ${
                 darkTheme ? 'text-gray-300' : 'text-gray-700'
               }`}>
-                Content Types:
-              </h5>
-              <div className={`text-sm ${
-                darkTheme ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                movie, series, drama, anime
-              </div>
-            </div>
-
-            <div>
-              <h5 className={`font-medium mb-2 ${
-                darkTheme ? 'text-gray-300' : 'text-gray-700'
-              }`}>
-                Special Format Notes:
+                Notes:
               </h5>
               <ul className={`list-disc list-inside text-sm space-y-1 ${
                 darkTheme ? 'text-gray-400' : 'text-gray-600'
               }`}>
-                <li><strong>Genres:</strong> Comma-separated (e.g., "thriller,drama,mystery")</li>
-                <li><strong>Cast:</strong> JSON format [name, character fields]</li>
-                <li><strong>Crew:</strong> JSON format [name, role fields]</li>
-                <li><strong>Streaming Platforms:</strong> Comma-separated (e.g., "Netflix,Hulu")</li>
-                <li><strong>Rating:</strong> Number between 0-10</li>
+                <li>Missing or invalid numbers (year, episodes, duration, rating) will be skipped or set to defaults.</li>
+                <li>Unknown content_type defaults to "drama".</li>
+                <li>Missing country/synopsis will be set to "N.A".</li>
+                <li>Genres can be comma-separated; unrecognized genres are ignored.</li>
               </ul>
             </div>
 
@@ -305,12 +329,43 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
         </div>
       )}
 
+      {/* Google Sheets Import */}
+      <div className={`p-4 rounded-xl border ${darkTheme ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+        <label className={`block text-sm font-medium mb-2 ${darkTheme ? 'text-gray-300' : 'text-gray-700'}`}>
+          Google Sheets CSV Link (public)
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="url"
+            placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv&gid=0"
+            value={googleSheetUrl}
+            onChange={(e) => setGoogleSheetUrl(e.target.value)}
+            className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
+              darkTheme ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'
+            }`}
+          />
+          <button
+            type="button"
+            onClick={importFromGoogleSheet}
+            disabled={uploading}
+            className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 disabled:opacity-50"
+          >
+            Import from Link
+          </button>
+        </div>
+      </div>
+
       {/* File Upload */}
-      <div className={`p-6 border-2 border-dashed rounded-xl transition-colors ${
-        darkTheme
-          ? 'border-gray-700 hover:border-red-600 bg-gray-900'
-          : 'border-gray-300 hover:border-red-500 bg-gray-50'
-      }`}>
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`p-6 border-2 border-dashed rounded-xl transition-colors ${
+          darkTheme
+            ? `${dragOver ? 'border-red-600' : 'border-gray-700'} bg-gray-900`
+            : `${dragOver ? 'border-red-500' : 'border-gray-300'} bg-gray-50`
+        }`}
+      >
         <div className="text-center">
           <svg className={`mx-auto h-12 w-12 mb-4 ${
             darkTheme ? 'text-gray-600' : 'text-gray-400'
@@ -351,7 +406,7 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
       </div>
 
       {/* Upload Button */}
-      {selectedFile && (
+      {(selectedFile) && (
         <div className="flex gap-4">
           <button
             onClick={handleUpload}
