@@ -623,6 +623,11 @@ function App() {
         darkTheme={darkTheme} 
         isLogin={isLoginMode}
         setIsLogin={setIsLoginMode}
+        onClose={() => {
+          setShowUserAuth(false);
+          // After closing, ensure public content is loaded
+          fetchContents('');
+        }}
       />
     );
   }
