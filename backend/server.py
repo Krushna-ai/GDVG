@@ -333,4 +333,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Startup and shutdown handlers remain unchanged
+# Startup event handler
+@app.on_event("startup")
+async def startup_event():
+    # Ensure/Reset default admin for preview
+    try:
+        await db.admins.update_one(
+            {"username": "admin"},
+            {"$set": {"password_hash": hash_password('admin123'), "is_admin": True},
+             "$setOnInsert": {"id": str(uuid.uuid4()), "created_at": datetime.utcnow(), "username": "admin"}},
+            upsert=True
+        )
+        logger.info("Default admin ensured/reset (admin/admin123)")
+    except Exception as e:
+        logger.error(f"Failed to ensure default admin: {e}")
