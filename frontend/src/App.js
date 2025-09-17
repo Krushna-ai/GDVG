@@ -13,6 +13,21 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 
+// Fetch public contents (hoisted as function declaration)
+async function fetchContentsAPI(API, search, setLoading, setContents) {
+  try {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    const response = await axios.get(`${API}/content?${params}`);
+    setContents(response.data.contents || []);
+  } catch (err) {
+    console.error('Error fetching contents:', err);
+    setContents([]);
+  } finally {
+    setLoading(false);
+  }
+}
 
 // Header Component
 const Header = ({ onSearch, darkTheme, setDarkTheme, onAuthClick }) => {
