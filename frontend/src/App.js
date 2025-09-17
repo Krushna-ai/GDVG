@@ -555,7 +555,7 @@ function App() {
         fetchUserProfile(userToken);
       } else {
         // Show public content for non-authenticated users
-        fetchContentsAPI(API, '', setLoading, setContents);
+        fetchContents('');
       }
     }
   }, []);
