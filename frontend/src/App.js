@@ -13,8 +13,9 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 
-// Fetch public contents (hoisted as function declaration)
-async function fetchContentsAPI(API, search, setLoading, setContents) {
+// Fetch public contents (hoisted as function declaration) - removed to avoid duplicate definitions
+/* removed fetchContentsAPI */
+function __noop__(){}
   try {
     setLoading(true);
     const params = new URLSearchParams();
