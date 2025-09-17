@@ -561,6 +561,26 @@ function App() {
     }
   }, []);
 
+  // Hoisted function declarations to avoid TDZ errors when called from handlers
+  function fetchContents(search = '') {
+    (async () => {
+      try {
+        setLoading(true);
+        const params = new URLSearchParams();
+        if (search) {
+          params.append('search', search);
+        }
+        const response = await axios.get(`${API}/content?${params}`);
+        setContents(response.data.contents);
+      } catch (error) {
+        console.error('Error fetching contents:', error);
+        setContents([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }
+
   const fetchUserProfile = async (token) => {
     try {
       const response = await axios.get(`${API}/auth/me`, {
