@@ -106,13 +106,16 @@ user_problem_statement: "Build Global Drama Verse Guide - a comprehensive global
 
 backend:
   - task: "Admin Bulk Import System"
-    implemented: false
-    working: false
+    implemented: true
+    working: "NA"
     file: "server.py"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
+      - working: true
+        agent: "main"
+        comment: "Implemented POST /api/admin/login, POST /api/admin/bulk-import, and GET /api/admin/bulk-import/template with flexible defaults (title-only required). Added Google Sheets via public CSV import on frontend. Ready for backend testing."
       - working: false
         agent: "testing"
         comment: "❌ CRITICAL: Admin bulk import endpoints NOT IMPLEMENTED. POST /api/admin/login and POST /api/admin/bulk-import return 404 errors. The server.py file contains BulkImportResult models and helper functions (parse_excel_csv_file, validate_and_convert_row) but no actual route definitions. All API endpoints return 404 - the FastAPI routes are completely missing from the implementation."
