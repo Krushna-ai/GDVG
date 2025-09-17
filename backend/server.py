@@ -15,6 +15,7 @@ import os
 import jwt
 import hashlib
 import logging
+import urllib.request
 
 # Load env
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
@@ -156,7 +157,7 @@ class ContentUpdate(BaseModel):
     rating: Optional[float] = None
     episodes: Optional[int] = None
     duration: Optional[int] = None
-    cast: Optional[List[CastMember]] = None
+    cast: Optional[List[CrewMember]] = None
     crew: Optional[List[CrewMember]] = None
     streaming_platforms: Optional[List[str]] = None
     tags: Optional[List[str]] = None
@@ -420,7 +421,6 @@ async def admin_login(admin_data: AdminLogin):
     token = create_access_token({"sub": admin_data.username, "type": "admin"})
     return {"access_token": token, "token_type": "bearer"}
 
-
 # Admin content management endpoints
 @api_router.get('/admin/content')
 async def admin_list_content(page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100), search: Optional[str] = None,
@@ -679,7 +679,150 @@ async def admin_bulk_import_preview(file: UploadFile = File(...), current_admin:
         logger.exception('Bulk import preview error')
         raise HTTPException(status_code=400, detail=f"Error processing file: {str(e)}")
 
-# Admin bulk import
+# Server-side URL preview (avoids browser CORS)
+class ImportURL(BaseModel):
+    csv_url: str
+
+@api_router.post('/admin/bulk-import/preview-url')
+async def admin_bulk_import_preview_url(body: ImportURL, current_admin: AdminUser = Depends(get_current_admin)):
+    try:
+        req = urllib.request.Request(body.csv_url, headers={
+            'User-Agent': 'Mozilla/5.0 (GDVG Importer)'
+        })
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            if resp.status != 200:
+                raise HTTPException(status_code=400, detail=f"Failed to fetch CSV: HTTP {resp.status}")
+            data = resp.read()
+        # Parse as CSV regardless of extension
+        df = pd.read_csv(io.BytesIO(data))
+        # Reuse preview logic by constructing a temp in-memory file path
+        # We'll inline the same loop for clarity
+        if df.empty:
+            raise HTTPException(status_code=400, detail="CSV appears empty")
+        preview_rows = []
+        will_import = 0
+        will_skip = 0
+        for idx, row in df.iterrows():
+            row_num = idx + 2
+            content = validate_and_convert_row(row)
+            if content is None:
+                will_skip += 1
+                preview_rows.append({
+                    'row': row_num,
+                    'title': str(row.get('title', '')).strip() or 'N.A',
+                    'year': row.get('year'),
+                    'country': str(row.get('country', '')).strip() or 'N.A',
+                    'content_type': str(row.get('content_type', '')).lower().strip() or 'drama',
+                    'rating': row.get('rating') if not pd.isna(row.get('rating')) else 0,
+                    'genres': str(row.get('genres', '')).strip(),
+                    'episodes': row.get('episodes'),
+                    'valid': False,
+                    'issues': ['Missing title or invalid row']
+                })
+                continue
+            title = content['title']
+            year = content.get('year')
+            ctype = content.get('content_type')
+            query = {"title": {"$regex": f"^{title}$", "$options": "i"}}
+            if year is not None and ctype:
+                query.update({"year": year, "content_type": ctype})
+            existing = await db.content.find_one(query)
+            if existing:
+                will_skip += 1
+                preview_rows.append({
+                    'row': row_num,
+                    'title': title,
+                    'year': year,
+                    'country': content.get('country') or 'N.A',
+                    'content_type': ctype,
+                    'rating': content.get('rating', 0),
+                    'genres': ','.join(content.get('genres', [])),
+                    'episodes': content.get('episodes'),
+                    'valid': False,
+                    'issues': ["Duplicate: already exists"]
+                })
+                continue
+            will_import += 1
+            preview_rows.append({
+                'row': row_num,
+                'title': title,
+                'year': year,
+                'country': content.get('country') or 'N.A',
+                'content_type': ctype,
+                'rating': content.get('rating', 0),
+                'genres': ','.join(content.get('genres', [])),
+                'episodes': content.get('episodes'),
+                'valid': True,
+                'issues': []
+            })
+        return {
+            'total_rows': int(len(df)),
+            'will_import': int(will_import),
+            'will_skip': int(will_skip),
+            'detected_columns': list(df.columns),
+            'preview': preview_rows[:50],
+            'errors': []
+        }
+    except Exception as e:
+        logger.exception('Preview URL error')
+        raise HTTPException(status_code=400, detail=f"Preview from URL failed: {str(e)}")
+
+
+@api_router.post('/admin/bulk-import/from-url', response_model=BulkImportResult)
+async def admin_bulk_import_from_url(body: ImportURL, current_admin: AdminUser = Depends(get_current_admin)):
+    try:
+        req = urllib.request.Request(body.csv_url, headers={
+            'User-Agent': 'Mozilla/5.0 (GDVG Importer)'
+        })
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            if resp.status != 200:
+                raise HTTPException(status_code=400, detail=f"Failed to fetch CSV: HTTP {resp.status}")
+            data = resp.read()
+        df = pd.read_csv(io.BytesIO(data))
+        if df.empty:
+            raise HTTPException(status_code=400, detail="CSV appears empty")
+        successful = 0
+        failed = 0
+        errors: List[str] = []
+        imported: List[str] = []
+        for idx, row in df.iterrows():
+            try:
+                content_data = validate_and_convert_row(row)
+                if content_data is None:
+                    failed += 1
+                    errors.append(f"Row {idx + 2}: Missing title or invalid data")
+                    continue
+                title = content_data['title']
+                year = content_data.get('year')
+                ctype = content_data.get('content_type')
+                query = {"title": {"$regex": f"^{title}$", "$options": "i"}}
+                if year is not None and ctype:
+                    query.update({"year": year, "content_type": ctype})
+                existing = await db.content.find_one(query)
+                if existing:
+                    failed += 1
+                    errors.append(f"Row {idx + 2}: Content '{title}' already exists")
+                    continue
+                await db.content.insert_one(content_data)
+                successful += 1
+                imported.append(title)
+            except Exception as e:
+                failed += 1
+                errors.append(f"Row {idx + 2}: {str(e)}")
+        return BulkImportResult(
+            success=successful > 0,
+            total_rows=len(df),
+            successful_imports=successful,
+            failed_imports=failed,
+            errors=errors[:20],
+            imported_content=imported[:20]
+        )
+    except Exception as e:
+        logger.exception('Import from URL error')
+        raise HTTPException(status_code=400, detail=f"Import from URL failed: {str(e)}")
+
+
+# Admin bulk import (file)
 @api_router.post('/admin/bulk-import', response_model=BulkImportResult)
 async def admin_bulk_import(file: UploadFile = File(...), current_admin: AdminUser = Depends(get_current_admin)):
     if not file.filename.lower().endswith(('.xlsx', '.xls', '.csv')):

@@ -33,42 +33,6 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
       tags: "survival,psychological,korean",
       poster_url: "",
       banner_url: ""
-    },
-    {
-      title: "Your Name", 
-      original_title: "君の名は。",
-      synopsis: "Two teenagers share a profound, magical connection upon discovering they are swapping bodies.",
-      year: 2016,
-      country: "Japan",
-      content_type: "movie", 
-      genres: "romance,drama,supernatural",
-      rating: 8.4,
-      episodes: null,
-      duration: 106,
-      cast: "Ryunosuke Kamiki,Mone Kamishiraishi",
-      crew: "Makoto Shinkai (Director)",
-      streaming_platforms: "Crunchyroll,Funimation",
-      tags: "anime,body-swap,supernatural",
-      poster_url: "",
-      banner_url: ""
-    },
-    {
-      title: "Money Heist",
-      original_title: "La Casa de Papel", 
-      synopsis: "An unusual group of robbers attempt to carry out the most perfect robbery in Spanish history.",
-      year: 2017,
-      country: "Spain",
-      content_type: "series",
-      genres: "crime,thriller,drama",
-      rating: 8.2,
-      episodes: 41,
-      duration: 70,
-      cast: "Úrsula Corberó,Álvaro Morte,Itziar Ituño",
-      crew: "Álex Pina (Creator)",
-      streaming_platforms: "Netflix",
-      tags: "heist,spanish,crime",
-      poster_url: "",
-      banner_url: ""
     }
   ];
 
@@ -86,6 +50,8 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
     if (validTypes.includes(file.type) || file.name.endsWith('.csv') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
       setSelectedFile(file);
       setImportResult(null);
+      setPreviewData(null);
+      setConfirmOpen(false);
     } else {
       alert('Please select a valid Excel (.xlsx, .xls) or CSV (.csv) file');
     }
@@ -138,9 +104,25 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
     return response.data;
   };
 
+  const previewUrlOnServer = async (url) => {
+    const token = localStorage.getItem('admin_token');
+    const response = await axios.post(`${API}/admin/bulk-import/preview-url`, { csv_url: url }, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.data;
+  };
+
+  const importUrlOnServer = async (url) => {
+    const token = localStorage.getItem('admin_token');
+    const response = await axios.post(`${API}/admin/bulk-import/from-url`, { csv_url: url }, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return response.data;
+  };
+
   const handleUpload = async () => {
-    if (!selectedFile) {
-      alert('Please select a file first or provide a Google Sheets CSV link');
+    if (!selectedFile && !googleSheetUrl) {
+      alert('Please select a file or provide a Google Sheets CSV link');
       return;
     }
 
@@ -148,10 +130,16 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
     setImportResult(null);
 
     try {
-      // Step 1: Preview
-      const preview = await previewFileOnServer(selectedFile);
-      setPreviewData(preview);
-      setConfirmOpen(true);
+      if (googleSheetUrl) {
+        // Server-side preview to avoid browser CORS
+        const preview = await previewUrlOnServer(googleSheetUrl);
+        setPreviewData(preview);
+        setConfirmOpen(true);
+      } else {
+        const preview = await previewFileOnServer(selectedFile);
+        setPreviewData(preview);
+        setConfirmOpen(true);
+      }
     } catch (error) {
       console.error('Preview error:', error);
       setImportResult({
@@ -168,10 +156,15 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
   };
 
   const confirmImport = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile && !googleSheetUrl) return;
     setUploading(true);
     try {
-      const result = await uploadFileToServer(selectedFile);
+      let result;
+      if (googleSheetUrl) {
+        result = await importUrlOnServer(googleSheetUrl);
+      } else {
+        result = await uploadFileToServer(selectedFile);
+      }
       setImportResult(result);
       setConfirmOpen(false);
       setPreviewData(null);
@@ -192,37 +185,12 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
   };
 
   const importFromGoogleSheet = async () => {
+    // This button now just triggers the same Preview & Import flow using the URL
     if (!googleSheetUrl || !googleSheetUrl.startsWith('http')) {
       alert('Please paste a valid public Google Sheets CSV export URL');
       return;
     }
-    setUploading(true);
-    setImportResult(null);
-    try {
-      // Fetch CSV text from the public link
-      const resp = await axios.get(googleSheetUrl, { responseType: 'text' });
-      const csvText = typeof resp.data === 'string' ? resp.data : new TextDecoder().decode(resp.data);
-      const blob = new Blob([csvText], { type: 'text/csv' });
-      const file = new File([blob], 'google_sheet.csv', { type: 'text/csv' });
-
-      // Preview first
-      const preview = await previewFileOnServer(file);
-      setSelectedFile(file); // so confirmImport uses same file
-      setPreviewData(preview);
-      setConfirmOpen(true);
-    } catch (error) {
-      console.error('Google Sheet import error:', error);
-      setImportResult({
-        success: false,
-        total_rows: 0,
-        successful_imports: 0,
-        failed_imports: 0,
-        errors: [error.response?.data?.detail || 'Failed to preview Google Sheet CSV. Make sure the link is public and ends with export?format=csv'],
-        imported_content: []
-      });
-    } finally {
-      setUploading(false);
-    }
+    await handleUpload();
   };
 
   const downloadTemplate = (withSamples = false) => {
@@ -263,6 +231,8 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
     setSelectedFile(null);
     setImportResult(null);
     setGoogleSheetUrl('');
+    setPreviewData(null);
+    setConfirmOpen(false);
     const input = document.getElementById('file-input');
     if (input) input.value = '';
   };
@@ -394,7 +364,7 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
             disabled={uploading}
             className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 disabled:opacity-50"
           >
-            Import from Link
+            Preview from Link
           </button>
         </div>
       </div>
@@ -450,7 +420,7 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
       </div>
 
       {/* Upload Button */}
-      {(selectedFile) && (
+      {(selectedFile || googleSheetUrl) && (
         <div className="flex gap-4">
           <button
             onClick={handleUpload}
