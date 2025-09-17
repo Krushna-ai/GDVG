@@ -421,6 +421,43 @@ async def admin_login(admin_data: AdminLogin):
     return {"access_token": token, "token_type": "bearer"}
 
 
+# Admin content management endpoints
+@api_router.get('/admin/content')
+async def admin_list_content(page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100), search: Optional[str] = None,
+                             current_admin: AdminUser = Depends(get_current_admin)):
+    skip = (page - 1) * limit
+    q: dict = {}
+    if search:
+        q["$or"] = [
+            {"title": {"$regex": search, "$options": "i"}},
+            {"original_title": {"$regex": search, "$options": "i"}},
+        ]
+    total = await db.content.count_documents(q)
+    docs = await db.content.find(q).skip(skip).limit(limit).sort("updated_at", -1).to_list(length=limit)
+    for d in docs:
+        d.pop('_id', None)
+    return {"contents": docs, "total": total}
+
+@api_router.post('/admin/content')
+async def admin_create_content(body: ContentCreate, current_admin: AdminUser = Depends(get_current_admin)):
+    content = Content(**body.dict())
+    await db.content.insert_one(content.dict())
+    return {"id": content.id}
+
+@api_router.put('/admin/content/{content_id}')
+async def admin_update_content(content_id: str, body: ContentUpdate, current_admin: AdminUser = Depends(get_current_admin)):
+    update_doc = {k: v for k, v in body.dict().items() if v is not None}
+    update_doc['updated_at'] = datetime.utcnow()
+    res = await db.content.update_one({"id": content_id}, {"$set": update_doc})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Content not found")
+    return {"updated": True}
+
+@api_router.delete('/admin/content/{content_id}')
+async def admin_delete_content(content_id: str, current_admin: AdminUser = Depends(get_current_admin)):
+    res = await db.content.delete_one({"id": content_id})
+    return {"deleted": res.deleted_count > 0}
+
 # Content endpoints
 @api_router.get('/content', response_model=ContentResponse)
 async def get_content(page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100), search: Optional[str] = None,
