@@ -673,22 +673,6 @@ function App() {
     );
   }
 
-  const fetchContents = async (search = '') => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams();
-      if (search) {
-        params.append('search', search);
-      }
-      
-      const response = await axios.get(`${API}/content?${params}`);
-      setContents(response.data.contents);
-    } catch (error) {
-      console.error('Error fetching contents:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
