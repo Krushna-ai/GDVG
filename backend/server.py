@@ -321,7 +321,97 @@ def validate_and_convert_row(row: pd.Series) -> Optional[dict]:
         return None
 
 
-# Auth endpoints
+# User Auth endpoints
+class UserCreate(BaseModel):
+    email: str
+    username: str
+    password: str
+    first_name: str
+    last_name: str
+
+class UserLogin(BaseModel):
+    login: str  # email or username
+    password: str
+
+class UserProfile(BaseModel):
+    id: str
+    email: str
+    username: str
+    first_name: str
+    last_name: str
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[str] = None
+    joined_date: datetime
+    is_verified: bool = False
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        sub: str = payload.get('sub')
+        t: str = payload.get('type', 'user')
+        if t != 'user' or not sub:
+            raise HTTPException(status_code=401, detail='User access required')
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail='Invalid token')
+    doc = await db.users.find_one({"id": sub})
+    if not doc:
+        raise HTTPException(status_code=401, detail='User not found')
+    doc.pop('_id', None)
+    return User(**doc)
+
+@api_router.post('/auth/register')
+async def register_user(user: UserCreate):
+    # Enforce unique email and username (case-insensitive)
+    if await db.users.find_one({"email": {"$regex": f"^{user.email}$", "$options": "i"}}):
+        raise HTTPException(status_code=400, detail='Email already registered')
+    if await db.users.find_one({"username": {"$regex": f"^{user.username}$", "$options": "i"}}):
+        raise HTTPException(status_code=400, detail='Username already taken')
+    new_user = User(
+        email=user.email,
+        username=user.username,
+        password_hash=hash_password(user.password),
+        first_name=user.first_name,
+        last_name=user.last_name,
+        is_verified=False,
+        is_active=True,
+        joined_date=datetime.utcnow()
+    )
+    await db.users.insert_one(new_user.dict())
+    # Auto-login
+    token = create_access_token({"sub": new_user.id, "type": "user"})
+    return {"access_token": token, "token_type": "bearer"}
+
+@api_router.post('/auth/login')
+async def login_user(body: UserLogin):
+    # Accept email or username
+    identifier = body.login.strip()
+    q = {"$or": [
+        {"email": {"$regex": f"^{identifier}$", "$options": "i"}},
+        {"username": {"$regex": f"^{identifier}$", "$options": "i"}}
+    ]}
+    user = await db.users.find_one(q)
+    if not user or not verify_password(body.password, user.get('password_hash', '')):
+        raise HTTPException(status_code=401, detail='Invalid credentials')
+    token = create_access_token({"sub": user['id'], "type": "user"})
+    return {"access_token": token, "token_type": "bearer"}
+
+@api_router.get('/auth/me', response_model=UserProfile)
+async def auth_me(current_user: User = Depends(get_current_user)):
+    return UserProfile(
+        id=current_user.id,
+        email=current_user.email,
+        username=current_user.username,
+        first_name=current_user.first_name,
+        last_name=current_user.last_name,
+        avatar_url=current_user.avatar_url,
+        bio=current_user.bio,
+        location=current_user.location,
+        joined_date=current_user.joined_date,
+        is_verified=current_user.is_verified
+    )
+
+# Admin Auth endpoint
 @api_router.post('/admin/login', response_model=Token)
 async def admin_login(admin_data: AdminLogin):
     admin = await db.admins.find_one({"username": admin_data.username})
