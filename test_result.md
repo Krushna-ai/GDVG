@@ -345,13 +345,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Day 6: Personal Analytics - Viewing Activity Tracking"
-    - "Day 6: Personal Analytics - User Analytics Dashboard" 
-    - "Day 6: Personal Analytics - Viewing History"
-    - "Day 7: Social Features - User Following System"
-    - "Day 7: Social Features - Followers and Following Lists"
-    - "Day 7: Social Features - Activity Feed"
-    - "Day 7: Social Features - User Social Statistics"
+    - "Backend: Bulk Import flexible defaults (title-only required)"
+    - "Backend: /api/content/featured and /api/content/search data integrity after import"
+    - "Frontend: BulkImport CSV/XLSX + Google Sheets public link flow"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
