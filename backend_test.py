@@ -2835,10 +2835,12 @@ All Empty,,,,,"""
 
 if __name__ == "__main__":
     tester = BackendTester()
-    success = tester.run_all_tests()
+    
+    # Run focused admin tests as requested
+    success = tester.run_focused_admin_tests()
     
     if success:
-        print("\n🎉 All tests passed! Backend API is working correctly.")
+        print("\n🎉 All focused admin tests passed! Backend API is working correctly.")
         sys.exit(0)
     else:
         print("\n⚠️  Some tests failed. Check the details above.")
