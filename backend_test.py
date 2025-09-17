@@ -2271,25 +2271,230 @@ class BackendTester:
     def test_admin_login(self):
         """Test POST /api/admin/login - Admin authentication"""
         try:
-            login_data = {
+            # Test with correct credentials
+            admin_data = {
                 "username": "admin",
                 "password": "admin123"
             }
             
-            response = self.make_request("POST", "/admin/login", json=login_data)
+            response = self.make_request("POST", "/admin/login", json=admin_data)
             
             if response.status_code == 200:
                 token_data = response.json()
-                if "access_token" in token_data:
+                if "access_token" in token_data and "token_type" in token_data:
                     self.admin_token = token_data["access_token"]
-                    self.log_test("Admin Login", True, "Successfully logged in as admin and obtained token")
+                    self.log_test("Admin Login", True, "Successfully authenticated admin user")
                 else:
-                    self.log_test("Admin Login", False, "No access token in response")
+                    self.log_test("Admin Login", False, "Missing token fields in response")
             else:
                 self.log_test("Admin Login", False, f"HTTP {response.status_code}: {response.text}")
+            
+            # Test with incorrect credentials
+            wrong_data = {
+                "username": "admin",
+                "password": "wrongpassword"
+            }
+            
+            response = self.make_request("POST", "/admin/login", json=wrong_data)
+            
+            if response.status_code == 401:
+                self.log_test("Admin Login - Wrong Password", True, "Correctly rejected wrong password")
+            else:
+                self.log_test("Admin Login - Wrong Password", False, f"Expected 401, got {response.status_code}")
                 
         except Exception as e:
             self.log_test("Admin Login", False, f"Exception: {str(e)}")
+    
+    def test_admin_bulk_import_csv(self):
+        """Test POST /api/admin/bulk-import with CSV data"""
+        if not self.admin_token:
+            self.log_test("Admin Bulk Import CSV", False, "No admin token available")
+            return
+            
+        try:
+            # Test 1: CSV with minimal data (title only)
+            csv_content = """title
+Test Drama 1
+Test Movie 2
+Test Series 3"""
+            
+            # Create in-memory CSV file
+            files = {
+                'file': ('test_minimal.csv', csv_content, 'text/csv')
+            }
+            
+            headers = {'Authorization': f'Bearer {self.admin_token}'}
+            response = self.make_request("POST", "/admin/bulk-import", files=files, headers=headers)
+            
+            if response.status_code == 200:
+                result = response.json()
+                required_fields = ["success", "total_rows", "successful_imports", "failed_imports", "errors", "imported_content"]
+                
+                if all(field in result for field in required_fields):
+                    self.log_test("Admin Bulk Import CSV - Minimal Data", True, 
+                                f"Processed {result['total_rows']} rows, {result['successful_imports']} successful, {result['failed_imports']} failed")
+                else:
+                    self.log_test("Admin Bulk Import CSV - Minimal Data", False, "Missing response fields")
+            else:
+                self.log_test("Admin Bulk Import CSV - Minimal Data", False, f"HTTP {response.status_code}: {response.text}")
+            
+            # Test 2: CSV with mixed valid/invalid rows
+            mixed_csv_content = """title,year,country,content_type,rating
+Valid Drama 1,2023,South Korea,drama,8.5
+,2022,Japan,movie,7.0
+Valid Movie 2,2021,India,movie,8.0
+Invalid Year,abc,China,series,9.0
+Valid Series 3,2020,Spain,series,7.5"""
+            
+            files = {
+                'file': ('test_mixed.csv', mixed_csv_content, 'text/csv')
+            }
+            
+            response = self.make_request("POST", "/admin/bulk-import", files=files, headers=headers)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result['total_rows'] == 5 and result['failed_imports'] > 0:
+                    self.log_test("Admin Bulk Import CSV - Mixed Data", True, 
+                                f"Correctly handled mixed data: {result['successful_imports']} successful, {result['failed_imports']} failed")
+                else:
+                    self.log_test("Admin Bulk Import CSV - Mixed Data", False, "Mixed data validation not working correctly")
+            else:
+                self.log_test("Admin Bulk Import CSV - Mixed Data", False, f"HTTP {response.status_code}")
+                
+        except Exception as e:
+            self.log_test("Admin Bulk Import CSV", False, f"Exception: {str(e)}")
+    
+    def test_admin_bulk_import_xlsx(self):
+        """Test POST /api/admin/bulk-import with XLSX data"""
+        if not self.admin_token:
+            self.log_test("Admin Bulk Import XLSX", False, "No admin token available")
+            return
+            
+        try:
+            import pandas as pd
+            import io
+            
+            # Create small in-memory XLSX file
+            data = {
+                'title': ['XLSX Drama 1', 'XLSX Movie 2', 'XLSX Series 3'],
+                'year': [2023, 2022, 2021],
+                'country': ['South Korea', 'Japan', 'India'],
+                'content_type': ['drama', 'movie', 'series'],
+                'rating': [8.5, 7.8, 8.2]
+            }
+            
+            df = pd.DataFrame(data)
+            excel_buffer = io.BytesIO()
+            df.to_excel(excel_buffer, index=False)
+            excel_buffer.seek(0)
+            
+            files = {
+                'file': ('test_data.xlsx', excel_buffer.getvalue(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            }
+            
+            headers = {'Authorization': f'Bearer {self.admin_token}'}
+            response = self.make_request("POST", "/admin/bulk-import", files=files, headers=headers)
+            
+            if response.status_code == 200:
+                result = response.json()
+                if result['total_rows'] == 3 and result['successful_imports'] > 0:
+                    self.log_test("Admin Bulk Import XLSX", True, 
+                                f"Successfully imported XLSX: {result['successful_imports']} items")
+                else:
+                    self.log_test("Admin Bulk Import XLSX", False, "XLSX import not working correctly")
+            else:
+                self.log_test("Admin Bulk Import XLSX", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except ImportError:
+            self.log_test("Admin Bulk Import XLSX", False, "pandas not available for XLSX testing")
+        except Exception as e:
+            self.log_test("Admin Bulk Import XLSX", False, f"Exception: {str(e)}")
+    
+    def test_content_after_import(self):
+        """Test GET /api/content/featured and /api/content/search after imports"""
+        try:
+            # Test featured content after imports
+            response = self.make_request("GET", "/content/featured?category=new_releases&limit=20")
+            
+            if response.status_code == 200:
+                contents = response.json()
+                if isinstance(contents, list) and len(contents) > 0:
+                    # Check if any imported content appears
+                    imported_titles = [c['title'] for c in contents if 'Test' in c['title'] or 'XLSX' in c['title'] or 'Valid' in c['title']]
+                    if len(imported_titles) > 0:
+                        self.log_test("Featured Content After Import", True, f"Found {len(imported_titles)} imported items in featured content")
+                    else:
+                        self.log_test("Featured Content After Import", True, "Featured content working (no imported items visible yet)")
+                else:
+                    self.log_test("Featured Content After Import", False, "No featured content returned")
+            else:
+                self.log_test("Featured Content After Import", False, f"HTTP {response.status_code}")
+            
+            # Test search for imported content
+            response = self.make_request("GET", "/content/search?query=Test")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "contents" in data:
+                    test_contents = [c for c in data["contents"] if 'Test' in c['title']]
+                    if len(test_contents) > 0:
+                        self.log_test("Search After Import", True, f"Found {len(test_contents)} imported test items in search")
+                    else:
+                        self.log_test("Search After Import", True, "Search working (no test items found)")
+                else:
+                    self.log_test("Search After Import", False, "Invalid search response format")
+            else:
+                self.log_test("Search After Import", False, f"HTTP {response.status_code}")
+                
+        except Exception as e:
+            self.log_test("Content After Import", False, f"Exception: {str(e)}")
+    
+    def run_focused_admin_tests(self):
+        """Run focused tests on admin endpoints as requested"""
+        print("🚀 Starting Focused Admin Backend Testing...")
+        print(f"Backend URL: {self.base_url}")
+        print("=" * 80)
+        
+        # 1. Admin login test
+        self.test_admin_login()
+        
+        # 2. Bulk import tests
+        if self.admin_token:
+            self.test_admin_bulk_import_csv()
+            self.test_admin_bulk_import_xlsx()
+        
+        # 3. Content endpoints after import
+        self.test_content_after_import()
+        
+        # 4. Filter endpoints
+        self.test_countries_endpoint()
+        self.test_genres_endpoint()
+        self.test_content_types_endpoint()
+        
+        # Print summary
+        self.print_summary()
+    
+    def print_summary(self):
+        """Print test summary"""
+        passed = sum(1 for result in self.test_results if result["success"])
+        total = len(self.test_results)
+        
+        print("\n" + "=" * 80)
+        print("📊 TEST SUMMARY")
+        print("=" * 80)
+        print(f"Total Tests: {total}")
+        print(f"Passed: {passed}")
+        print(f"Failed: {total - passed}")
+        print(f"Success Rate: {(passed/total)*100:.1f}%")
+        
+        if total - passed > 0:
+            print("\n❌ FAILED TESTS:")
+            for result in self.test_results:
+                if not result["success"]:
+                    print(f"  - {result['test']}: {result['message']}")
+        
+        return passed == total
     
     def test_bulk_import_csv_flexible_defaults(self):
         """Test POST /api/admin/bulk-import with CSV - Flexible defaults (title-only required)"""
