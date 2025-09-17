@@ -649,14 +649,8 @@ function App() {
     setCurrentUser(null);
     localStorage.removeItem('user_token');
     localStorage.removeItem('admin_token');
-    
-    if (isAdminMode) {
-      // Redirect to main site
-      window.location.href = '/';
-    } else {
-      // reload public contents after logout
-      fetchContents('');
-    }
+    // Always redirect to home to avoid any stale state issues
+    window.location.assign('/');
   };
 
   // Admin Mode
