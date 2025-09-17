@@ -124,6 +124,20 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
     return response.data;
   };
 
+  const previewFileOnServer = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const token = localStorage.getItem('admin_token');
+    const response = await axios.post(`${API}/admin/bulk-import/preview`, formData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  };
+
   const handleUpload = async () => {
     if (!selectedFile) {
       alert('Please select a file first or provide a Google Sheets CSV link');
