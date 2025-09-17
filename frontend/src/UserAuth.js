@@ -28,21 +28,27 @@ const UserAuth = ({ onLogin, darkTheme, isLogin, setIsLogin }) => {
     setError('');
 
     try {
-      const endpoint = isLogin ? '/auth/login' : '/auth/register';
-      const payload = isLogin 
-        ? { email: formData.email, password: formData.password }
-        : formData;
-
-      const response = await axios.post(`${API}${endpoint}`, payload);
-      
       if (isLogin) {
+        // Allow login with either email OR username
+        const response = await axios.post(`${API}/auth/login`, {
+          login: formData.email || formData.username,
+          password: formData.password
+        });
         const { access_token } = response.data;
         localStorage.setItem('user_token', access_token);
         onLogin(access_token, 'user');
       } else {
-        // After successful registration, automatically log in
-        const loginResponse = await axios.post(`${API}/auth/login`, {
+        // Registration with uniqueness checks happens in backend
+        await axios.post(`${API}/auth/register`, {
           email: formData.email,
+          username: formData.username,
+          password: formData.password,
+          first_name: formData.first_name,
+          last_name: formData.last_name
+        });
+        // Auto login
+        const loginResponse = await axios.post(`${API}/auth/login`, {
+          login: formData.email,
           password: formData.password
         });
         const { access_token } = loginResponse.data;
