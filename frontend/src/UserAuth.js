@@ -110,6 +110,22 @@ const UserAuth = ({ onLogin, darkTheme, isLogin, setIsLogin }) => {
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg text-sm">
               {error}
+            {/* Back Button */}
+            <div>
+              <button
+                type="button"
+                onClick={() => window.history.back()}
+                className={`mb-2 inline-flex items-center px-3 py-2 rounded-lg ${
+                  darkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                }`}
+              >
+                <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
+              </button>
+            </div>
+
             </div>
           )}
 
