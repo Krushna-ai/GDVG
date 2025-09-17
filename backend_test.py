@@ -19,6 +19,7 @@ class BackendTester:
         self.test_results = []
         self.sample_content_id = None
         self.auth_token = None
+        self.admin_token = None
         self.test_user_id = None
         self.test_watchlist_item_id = None
         
