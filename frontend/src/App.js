@@ -639,7 +639,8 @@ function App() {
       // Redirect to main site
       window.location.href = '/';
     } else {
-      fetchContents();
+      // reload public contents after logout
+      fetchContents('');
     }
   };
 
