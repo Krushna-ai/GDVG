@@ -180,7 +180,10 @@ const UserAuth = ({ onLogin, darkTheme, isLogin, setIsLogin, onClose }) => {
             <div>
               <button
                 type="button"
-                onClick={() => window.history.back()}
+                onClick={() => {
+                  if (onClose) onClose();
+                  navigate(-1);
+                }}
                 className={`mb-2 inline-flex items-center px-3 py-2 rounded-lg ${
                   darkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
                 }`}
