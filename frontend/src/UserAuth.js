@@ -132,7 +132,10 @@ const UserAuth = ({ onLogin, darkTheme, isLogin, setIsLogin, onClose }) => {
         {/* Exit (X) button top-left */}
         <button
           aria-label="Close"
-          onClick={() => navigate('/')}
+          onClick={() => {
+            if (onClose) onClose();
+            navigate('/');
+          }}
           className={`absolute top-3 left-3 h-8 w-8 flex items-center justify-center rounded-full ${
             darkTheme ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
           }`}
