@@ -85,29 +85,31 @@ const FeaturedSections = ({ darkTheme, handleContentClick, showAds = false }) =>
           {title}
         </h2>
         
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory">
           {contents.map((content, index) => (
             <div 
               key={content.id || index}
-              className={`flex-shrink-0 w-48 group cursor-pointer transition-all duration-300 transform hover:scale-105 ${
+              className={`flex-shrink-0 w-48 group cursor-pointer transition-transform duration-300 hover:scale-[1.04] ${
                 darkTheme ? 'hover:shadow-2xl' : 'hover:shadow-xl'
-              }`}
+              } snap-start`}
               onClick={() => handleContentClick(content)}
             >
-              <div className={`rounded-xl overflow-hidden transition-all duration-300 ${
+              <div className={`rounded-xl overflow-hidden relative ${
                 darkTheme 
-                  ? 'bg-gray-900 group-hover:bg-gray-800' 
-                  : 'bg-white group-hover:bg-gray-50'
+                  ? 'bg-gray-900' 
+                  : 'bg-white'
               }`}>
                 {/* Poster */}
                 <div className="relative aspect-[2/3] overflow-hidden">
                   <img
                     src={content.poster_url}
                     alt={content.title}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    className="w-full h-full object-cover"
                     loading="lazy"
                   />
-                  
+                  {/* Gradient at bottom to normalize text zone height */}
+                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
                   {/* Rating Badge */}
                   <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-lg">
                     <div className="flex items-center gap-1">
@@ -126,12 +128,12 @@ const FeaturedSections = ({ darkTheme, handleContentClick, showAds = false }) =>
                   </div>
 
                   {/* Hover Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20" />
                 </div>
 
-                {/* Content Info */}
+                {/* Content Info fixed-height to avoid uneven cards */}
                 <div className="p-3">
-                  <h3 className={`font-bold text-sm mb-1 line-clamp-2 ${
+                  <h3 className={`font-bold text-sm mb-1 line-clamp-2 min-h-[2.5rem] ${
                     darkTheme ? 'text-white' : 'text-gray-900'
                   }`}>
                     {content.title}
@@ -146,19 +148,22 @@ const FeaturedSections = ({ darkTheme, handleContentClick, showAds = false }) =>
                     <span className={`text-xs ${
                       darkTheme ? 'text-gray-500' : 'text-gray-400'
                     }`}>•</span>
-                    <span className={`text-xs ${
+                    <span className={`text-xs truncate max-w-[6rem] ${
                       darkTheme ? 'text-gray-400' : 'text-gray-600'
                     }`}>
                       {content.country || 'N.A'}
                     </span>
                   </div>
 
-                  <p className={`text-xs line-clamp-2 ${
+                  <p className={`text-xs line-clamp-2 min-h-[2.5rem] ${
                     darkTheme ? 'text-gray-400' : 'text-gray-600'
                   }`}>
                     {content.synopsis}
                   </p>
                 </div>
+
+                {/* Subtle bottom highlight on hover */}
+                <div className="absolute inset-x-0 bottom-0 h-0.5 bg-gradient-to-r from-red-600 to-red-700 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </div>
           ))}
