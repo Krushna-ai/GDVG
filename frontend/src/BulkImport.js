@@ -460,10 +460,10 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Importing...
+                Uploading...
               </div>
             ) : (
-              'Import Content'
+              'Preview & Import'
             )}
           </button>
           
@@ -478,6 +478,70 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
           >
             Reset
           </button>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {confirmOpen && previewData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className={`w-full max-w-4xl rounded-xl shadow-xl ${darkTheme ? 'bg-gray-900 border border-gray-800' : 'bg-white'}`}>
+            <div className="p-4 border-b flex items-center justify-between">
+              <h4 className={`text-lg font-semibold ${darkTheme ? 'text-white' : 'text-gray-900'}`}>Confirm Import</h4>
+              <button onClick={() => setConfirmOpen(false)} className={`${darkTheme ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}>✕</button>
+            </div>
+            <div className="p-4 max-h-[60vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className={`${darkTheme ? 'bg-gray-800' : 'bg-gray-100'} p-3 rounded-lg`}>
+                  <div className="text-sm">Total Rows</div>
+                  <div className="text-2xl font-bold">{previewData.total_rows}</div>
+                </div>
+                <div className={`${darkTheme ? 'bg-gray-800' : 'bg-gray-100'} p-3 rounded-lg`}>
+                  <div className="text-sm">Will Import</div>
+                  <div className="text-2xl font-bold text-green-600">{previewData.will_import}</div>
+                </div>
+                <div className={`${darkTheme ? 'bg-gray-800' : 'bg-gray-100'} p-3 rounded-lg`}>
+                  <div className="text-sm">Will Skip</div>
+                  <div className="text-2xl font-bold text-red-600">{previewData.will_skip}</div>
+                </div>
+                <div className={`${darkTheme ? 'bg-gray-800' : 'bg-gray-100'} p-3 rounded-lg`}>
+                  <div className="text-sm">Detected Columns</div>
+                  <div className="text-xs break-words">{previewData.detected_columns.join(', ')}</div>
+                </div>
+              </div>
+              <div className="mb-2 font-medium">Preview (first 50 rows)</div>
+              <div className="overflow-x-auto">
+                <table className={`min-w-full text-sm ${darkTheme ? 'text-gray-200' : 'text-gray-800'}`}>
+                  <thead className={`${darkTheme ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                    <tr>
+                      {['Row','Title','Year','Country','Type','Rating','Genres','Episodes','Valid','Issues'].map(h => (
+                        <th key={h} className="px-3 py-2 text-left whitespace-nowrap">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previewData.preview.map((r, idx) => (
+                      <tr key={idx} className={`${r.valid ? '' : 'bg-red-50/30'}`}>
+                        <td className="px-3 py-2">{r.row}</td>
+                        <td className="px-3 py-2">{r.title}</td>
+                        <td className="px-3 py-2">{r.year ?? 'N.A'}</td>
+                        <td className="px-3 py-2">{r.country}</td>
+                        <td className="px-3 py-2 uppercase">{r.content_type}</td>
+                        <td className="px-3 py-2">{typeof r.rating === 'number' ? r.rating.toFixed(1) : (r.rating || '0.0')}</td>
+                        <td className="px-3 py-2">{r.genres}</td>
+                        <td className="px-3 py-2">{r.episodes ?? 'N.A'}</td>
+                        <td className="px-3 py-2">{r.valid ? 'Yes' : 'No'}</td>
+                        <td className="px-3 py-2">{(r.issues || []).join('; ')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="p-4 border-t flex justify-end gap-3">
+              <button onClick={() => setConfirmOpen(false)} className={`${darkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'} px-4 py-2 rounded-lg`}>Cancel</button>
+              <button onClick={confirmImport} className="px-4 py-2 rounded-lg bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800">Confirm Import</button>
+            </div>
+          </div>
         </div>
       )}
 
