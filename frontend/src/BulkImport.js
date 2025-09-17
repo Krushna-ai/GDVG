@@ -204,9 +204,12 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
       const csvText = typeof resp.data === 'string' ? resp.data : new TextDecoder().decode(resp.data);
       const blob = new Blob([csvText], { type: 'text/csv' });
       const file = new File([blob], 'google_sheet.csv', { type: 'text/csv' });
-      const result = await uploadFileToServer(file);
-      setImportResult(result);
-      if (result.success && onImportComplete) onImportComplete();
+
+      // Preview first
+      const preview = await previewFileOnServer(file);
+      setSelectedFile(file); // so confirmImport uses same file
+      setPreviewData(preview);
+      setConfirmOpen(true);
     } catch (error) {
       console.error('Google Sheet import error:', error);
       setImportResult({
@@ -214,7 +217,7 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
         total_rows: 0,
         successful_imports: 0,
         failed_imports: 0,
-        errors: [error.response?.data?.detail || 'Failed to fetch Google Sheet CSV. Make sure the link is public and ends with export?format=csv'],
+        errors: [error.response?.data?.detail || 'Failed to preview Google Sheet CSV. Make sure the link is public and ends with export?format=csv'],
         imported_content: []
       });
     } finally {
