@@ -12,6 +12,13 @@ const AdminLogin = ({ onLogin, darkTheme }) => {
     password: ''
   });
   const [loading, setLoading] = useState(false);
+  const [backendHealthy, setBackendHealthy] = useState(true);
+
+  useEffect(() => {
+    // Basic health check for better error context
+    axios.get(`${API}/health`).then(() => setBackendHealthy(true)).catch(() => setBackendHealthy(false));
+  }, []);
+
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
