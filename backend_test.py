@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Backend API Testing for Global Drama Verse Guide
-Tests all content-related endpoints, search functionality, filtering, and database integration
+Backend API Testing for Global Drama Verse Guide - Priority A Readiness Tests
+Tests core API endpoints for Priority A readiness and admin bulk import system
 """
 
 import requests
@@ -13,6 +13,13 @@ import io
 
 # Get backend URL from frontend .env
 BACKEND_URL = "https://routefix-drama.preview.emergentagent.com/api"
+
+# Admin credentials for testing
+ADMIN_USERNAME = "globaldramaverseguide45@gmail.com"
+ADMIN_PASSWORD = "krushna45"
+
+# CSV URL for bulk import testing
+CSV_URL = "https://customer-assets.emergentagent.com/job_routefix-drama/artifacts/8sooripa_Top_Drama199.csv"
 
 class BackendTester:
     def __init__(self):
