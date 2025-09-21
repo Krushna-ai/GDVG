@@ -3573,6 +3573,134 @@ All Empty,,,,,"""
         
         print("=" * 80)
 
+    def test_content_list_endpoint_review(self):
+        """Test GET /api/content -> expect 200 and contents[] length > 0"""
+        try:
+            response = self.make_request("GET", "/content")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "contents" in data and isinstance(data["contents"], list):
+                    contents_length = len(data["contents"])
+                    if contents_length > 0:
+                        self.log_test("Content List Review", True, f"GET /api/content returned 200 with {contents_length} contents (> 0 ✓)")
+                    else:
+                        self.log_test("Content List Review", False, "GET /api/content returned 200 but contents[] length = 0")
+                else:
+                    self.log_test("Content List Review", False, "GET /api/content returned 200 but missing 'contents' array")
+            else:
+                self.log_test("Content List Review", False, f"GET /api/content returned {response.status_code}, expected 200")
+                
+        except Exception as e:
+            self.log_test("Content List Review", False, f"Exception: {str(e)}")
+
+    def test_deep_health_endpoint(self):
+        """Test GET /api/health/deep -> core_routes_ok true, content_count > 0"""
+        try:
+            response = self.make_request("GET", "/health/deep")
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Check core_routes_ok
+                if "core_routes_ok" in data:
+                    core_routes_ok = data["core_routes_ok"]
+                    if core_routes_ok is True:
+                        self.log_test("Deep Health - Core Routes", True, "core_routes_ok = true ✓")
+                    else:
+                        core_route_map = data.get("core_route_map", {})
+                        missing_routes = [route for route, available in core_route_map.items() if not available]
+                        self.log_test("Deep Health - Core Routes", False, f"core_routes_ok = false, missing: {missing_routes}")
+                else:
+                    self.log_test("Deep Health - Core Routes", False, "Missing 'core_routes_ok' field")
+                
+                # Check content_count > 0
+                if "db" in data and isinstance(data["db"], dict) and "content_count" in data["db"]:
+                    content_count = data["db"]["content_count"]
+                    if content_count > 0:
+                        self.log_test("Deep Health - Content Count", True, f"content_count = {content_count} (> 0 ✓)")
+                    else:
+                        self.log_test("Deep Health - Content Count", False, f"content_count = {content_count} (not > 0)")
+                else:
+                    self.log_test("Deep Health - Content Count", False, "Missing db.content_count field")
+                    
+            else:
+                self.log_test("Deep Health Endpoint", False, f"GET /api/health/deep returned {response.status_code}, expected 200")
+                
+        except Exception as e:
+            self.log_test("Deep Health Endpoint", False, f"Exception: {str(e)}")
+
+    def test_featured_content_endpoint_review(self):
+        """Test GET /api/content/featured -> 200 array length >= 1"""
+        try:
+            response = self.make_request("GET", "/content/featured")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list):
+                    array_length = len(data)
+                    if array_length >= 1:
+                        self.log_test("Featured Content Review", True, f"GET /api/content/featured returned 200 with array length {array_length} (>= 1 ✓)")
+                    else:
+                        self.log_test("Featured Content Review", False, f"GET /api/content/featured returned 200 but array length = {array_length} (not >= 1)")
+                else:
+                    self.log_test("Featured Content Review", False, "GET /api/content/featured returned 200 but response is not an array")
+            else:
+                self.log_test("Featured Content Review", False, f"GET /api/content/featured returned {response.status_code}, expected 200")
+                
+        except Exception as e:
+            self.log_test("Featured Content Review", False, f"Exception: {str(e)}")
+
+    def run_review_request_tests(self):
+        """Run specific review request tests for homepage and diagnostics"""
+        print("🚀 REVIEW REQUEST BACKEND TESTING")
+        print("=" * 60)
+        print(f"Backend URL: {self.base_url}")
+        print("Testing specific endpoints after endpoint restoration:")
+        print("1) GET /api/content -> expect 200 and contents[] length > 0")
+        print("2) GET /api/health/deep -> core_routes_ok true, content_count > 0")
+        print("3) GET /api/content/featured -> 200 array length >= 1")
+        print("=" * 60)
+        
+        # Review Request Specific Tests
+        self.test_content_list_endpoint_review()
+        self.test_deep_health_endpoint()
+        self.test_featured_content_endpoint_review()
+        
+        # Print summary
+        print("\n" + "=" * 60)
+        print("REVIEW REQUEST TEST SUMMARY")
+        print("=" * 60)
+        
+        passed = sum(1 for result in self.test_results if result["success"])
+        total = len(self.test_results)
+        success_rate = (passed / total * 100) if total > 0 else 0
+        
+        print(f"Tests Passed: {passed}/{total} ({success_rate:.1f}%)")
+        
+        if success_rate == 100:
+            print("🎉 ALL REVIEW REQUEST TESTS PASSED - ENDPOINTS WORKING!")
+        elif success_rate >= 66:
+            print("⚠️  REVIEW REQUEST MOSTLY READY - Some issues detected")
+        else:
+            print("❌ REVIEW REQUEST FAILED - Critical issues detected")
+        
+        # Show failed tests
+        failed_tests = [result for result in self.test_results if not result["success"]]
+        if failed_tests:
+            print("\nFAILED TESTS:")
+            for test in failed_tests:
+                print(f"  ❌ {test['test']}: {test['message']}")
+        
+        # Show successful tests
+        successful_tests = [result for result in self.test_results if result["success"]]
+        if successful_tests:
+            print("\nSUCCESSFUL TESTS:")
+            for test in successful_tests:
+                print(f"  ✅ {test['test']}: {test['message']}")
+        
+        return success_rate == 100
+
 if __name__ == "__main__":
     tester = BackendTester()
     
