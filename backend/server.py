@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Query, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -7,15 +7,11 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-import pandas as pd
 import uuid
-import json
-import io
 import os
 import jwt
 import hashlib
 import logging
-import urllib.request
 import re
 import unicodedata
 
