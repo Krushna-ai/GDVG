@@ -412,9 +412,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Priority A: Homepage visibility + navigation to ContentDetail"
+    - "Content API endpoints - CRITICAL: Missing route implementations"
+    - "Admin Bulk Import System - Missing route implementations"
   stuck_tasks:
-    - "None"
+    - "Content API endpoints"
+    - "Admin Bulk Import System"
   test_all: false
   test_priority: "high_first"
 
