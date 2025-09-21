@@ -623,8 +623,7 @@ async def advanced_search(query: Optional[str] = None, country: Optional[str] = 
 @api_router.get('/content/featured')
 async def content_featured(category: Optional[str] = 'trending', country: Optional[str] = None, limit: int = Query(10, ge=1, le=50)):
     if category == 'trending':
-        # Get trending content based on rating and recent activity (last 6 months to be more inclusive)
-        six_months_ago = (datetime.utcnow() - timedelta(days=180)).isoformat()
+        # Get trending content based on rating and recent activity
         cursor = db.content.find().sort([("rating", -1), ("created_at", -1)]).limit(limit)
     elif category == 'new_releases':
         cursor = db.content.find().sort("created_at", -1).limit(limit)
