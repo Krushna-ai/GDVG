@@ -2830,6 +2830,301 @@ Test Movie 2"""
         except Exception as e:
             self.log_test("Featured Content", False, f"Exception: {str(e)}")
 
+    def test_admin_bulk_import_preview_url(self):
+        """Test POST /api/admin/bulk-import/preview-url - Preview CSV import from URL"""
+        if not self.admin_token:
+            self.log_test("Admin Bulk Import Preview URL", False, "No admin token available")
+            return
+            
+        try:
+            preview_data = {
+                "csv_url": CSV_URL
+            }
+            
+            response = self.make_request("POST", "/admin/bulk-import/preview-url", 
+                                       json=preview_data, 
+                                       headers={"Authorization": f"Bearer {self.admin_token}"})
+            
+            if response.status_code == 200:
+                result = response.json()
+                required_fields = ["total_rows", "will_import", "will_skip", "detected_columns", "preview"]
+                
+                if all(field in result for field in required_fields):
+                    self.log_test("Admin Bulk Import Preview URL", True, 
+                                f"Preview generated: {result['total_rows']} total rows, {result['will_import']} will import, {result['will_skip']} will skip")
+                    
+                    # Store preview data for comparison
+                    self.preview_total_rows = result['total_rows']
+                    self.preview_will_import = result['will_import']
+                    self.preview_will_skip = result['will_skip']
+                    
+                    # Verify preview structure
+                    if isinstance(result["preview"], list) and len(result["preview"]) > 0:
+                        sample_preview = result["preview"][0]
+                        preview_fields = ["row", "title", "valid", "issues"]
+                        if all(field in sample_preview for field in preview_fields):
+                            self.log_test("Admin Bulk Import Preview Structure", True, "Preview rows have required fields")
+                        else:
+                            self.log_test("Admin Bulk Import Preview Structure", False, "Preview rows missing required fields")
+                    
+                    # Verify detected columns
+                    if isinstance(result["detected_columns"], list) and len(result["detected_columns"]) > 0:
+                        self.log_test("Admin Bulk Import Detected Columns", True, f"Detected {len(result['detected_columns'])} columns")
+                    else:
+                        self.log_test("Admin Bulk Import Detected Columns", False, "No columns detected")
+                        
+                else:
+                    missing_fields = [f for f in required_fields if f not in result]
+                    self.log_test("Admin Bulk Import Preview URL", False, f"Missing response fields: {missing_fields}")
+            else:
+                self.log_test("Admin Bulk Import Preview URL", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("Admin Bulk Import Preview URL", False, f"Exception: {str(e)}")
+
+    def test_admin_bulk_import_jobs_list_initial(self):
+        """Test GET /api/admin/bulk-import/jobs - List import jobs with pagination (initial)"""
+        if not self.admin_token:
+            self.log_test("Admin Bulk Import Jobs List Initial", False, "No admin token available")
+            return
+            
+        try:
+            # Get initial job count
+            response = self.make_request("GET", "/admin/bulk-import/jobs", 
+                                       headers={"Authorization": f"Bearer {self.admin_token}"})
+            
+            if response.status_code == 200:
+                result = response.json()
+                required_fields = ["jobs", "total", "page", "limit"]
+                
+                if all(field in result for field in required_fields):
+                    initial_total = result["total"]
+                    jobs = result["jobs"]
+                    
+                    self.log_test("Admin Bulk Import Jobs List Initial", True, 
+                                f"Retrieved {len(jobs)} jobs out of {initial_total} total")
+                    
+                    # Store initial count for later comparison
+                    self.initial_job_count = initial_total
+                    
+                    # Verify job structure if jobs exist
+                    if len(jobs) > 0:
+                        sample_job = jobs[0]
+                        job_fields = ["id", "admin_username", "source_type", "source", "status", 
+                                    "total_rows", "processed_rows", "successful_imports", "failed_imports"]
+                        if all(field in sample_job for field in job_fields):
+                            self.log_test("Admin Bulk Import Job Structure", True, "Job objects have required fields")
+                        else:
+                            missing_fields = [f for f in job_fields if f not in sample_job]
+                            self.log_test("Admin Bulk Import Job Structure", False, f"Missing job fields: {missing_fields}")
+                    
+                    # Test pagination
+                    if initial_total > 0:
+                        page_response = self.make_request("GET", "/admin/bulk-import/jobs?page=1&limit=2", 
+                                                        headers={"Authorization": f"Bearer {self.admin_token}"})
+                        if page_response.status_code == 200:
+                            page_result = page_response.json()
+                            if page_result["page"] == 1 and page_result["limit"] == 2 and len(page_result["jobs"]) <= 2:
+                                self.log_test("Admin Bulk Import Jobs Pagination", True, "Pagination working correctly")
+                            else:
+                                self.log_test("Admin Bulk Import Jobs Pagination", False, "Pagination not working correctly")
+                        else:
+                            self.log_test("Admin Bulk Import Jobs Pagination", False, f"Pagination request failed: HTTP {page_response.status_code}")
+                            
+                else:
+                    missing_fields = [f for f in required_fields if f not in result]
+                    self.log_test("Admin Bulk Import Jobs List Initial", False, f"Missing response fields: {missing_fields}")
+            else:
+                self.log_test("Admin Bulk Import Jobs List Initial", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("Admin Bulk Import Jobs List Initial", False, f"Exception: {str(e)}")
+
+    def test_admin_bulk_import_from_url_with_job_tracking(self):
+        """Test POST /api/admin/bulk-import/from-url - Import content from CSV URL with job tracking"""
+        if not self.admin_token:
+            self.log_test("Admin Bulk Import from URL with Job Tracking", False, "No admin token available")
+            return
+            
+        try:
+            import_data = {
+                "csv_url": CSV_URL
+            }
+            
+            response = self.make_request("POST", "/admin/bulk-import/from-url", 
+                                       json=import_data, 
+                                       headers={"Authorization": f"Bearer {self.admin_token}"})
+            
+            if response.status_code == 200:
+                result = response.json()
+                required_fields = ["success", "total_rows", "successful_imports", "failed_imports"]
+                
+                if all(field in result for field in required_fields):
+                    self.log_test("Admin Bulk Import from URL with Job Tracking", True, 
+                                f"Import completed: {result['successful_imports']} successful, {result['failed_imports']} failed out of {result['total_rows']} total")
+                    
+                    # Store import counts for job verification
+                    self.import_total_rows = result['total_rows']
+                    self.import_successful = result['successful_imports']
+                    self.import_failed = result['failed_imports']
+                    
+                    # Verify import counts match preview if available
+                    if hasattr(self, 'preview_total_rows'):
+                        if result['total_rows'] == self.preview_total_rows:
+                            self.log_test("Import vs Preview Total Rows Match", True, 
+                                        f"Import total rows ({result['total_rows']}) matches preview")
+                        else:
+                            self.log_test("Import vs Preview Total Rows Match", False, 
+                                        f"Import total rows ({result['total_rows']}) doesn't match preview ({self.preview_total_rows})")
+                    
+                else:
+                    missing_fields = [f for f in required_fields if f not in result]
+                    self.log_test("Admin Bulk Import from URL with Job Tracking", False, f"Missing response fields: {missing_fields}")
+            else:
+                self.log_test("Admin Bulk Import from URL with Job Tracking", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("Admin Bulk Import from URL with Job Tracking", False, f"Exception: {str(e)}")
+
+    def test_admin_bulk_import_jobs_after_import(self):
+        """Test GET /api/admin/bulk-import/jobs after import - Verify job was created and completed"""
+        if not self.admin_token:
+            self.log_test("Admin Bulk Import Jobs After Import", False, "No admin token available")
+            return
+            
+        try:
+            # Wait a moment for job to complete
+            time.sleep(2)
+            
+            response = self.make_request("GET", "/admin/bulk-import/jobs", 
+                                       headers={"Authorization": f"Bearer {self.admin_token}"})
+            
+            if response.status_code == 200:
+                result = response.json()
+                current_total = result["total"]
+                jobs = result["jobs"]
+                
+                # Check if total increased (or at least one job exists)
+                if hasattr(self, 'initial_job_count'):
+                    if current_total > self.initial_job_count:
+                        self.log_test("Admin Bulk Import Jobs Count After Import", True, 
+                                    f"Job count increased from {self.initial_job_count} to {current_total}")
+                    elif current_total == self.initial_job_count and current_total > 0:
+                        self.log_test("Admin Bulk Import Jobs Count After Import", True, 
+                                    f"Job count remained at {current_total} (job may have existed)")
+                    else:
+                        self.log_test("Admin Bulk Import Jobs Count After Import", False, 
+                                    f"Job count issue: from {self.initial_job_count} to {current_total}")
+                else:
+                    self.log_test("Admin Bulk Import Jobs Count After Import", True, 
+                                f"Found {current_total} total jobs")
+                
+                # Find the latest job and verify it's completed
+                if len(jobs) > 0:
+                    latest_job = jobs[0]  # Jobs are sorted by started_at desc
+                    
+                    if latest_job["status"] == "completed":
+                        self.log_test("Admin Bulk Import Latest Job Status", True, 
+                                    f"Latest job completed with {latest_job['processed_rows']} processed rows")
+                        
+                        # Verify processed rows match total rows
+                        if latest_job["processed_rows"] == latest_job["total_rows"]:
+                            self.log_test("Admin Bulk Import Job Progress", True, 
+                                        f"Job fully processed: {latest_job['processed_rows']}/{latest_job['total_rows']} rows")
+                        else:
+                            self.log_test("Admin Bulk Import Job Progress", False, 
+                                        f"Job not fully processed: {latest_job['processed_rows']}/{latest_job['total_rows']} rows")
+                        
+                        # Store latest job ID for individual job test
+                        self.latest_job_id = latest_job["id"]
+                        
+                        # Verify job counts match import results if available
+                        if hasattr(self, 'import_total_rows'):
+                            if latest_job["total_rows"] == self.import_total_rows:
+                                self.log_test("Job vs Import Total Rows Match", True, 
+                                            f"Job total rows ({latest_job['total_rows']}) matches import result")
+                            else:
+                                self.log_test("Job vs Import Total Rows Match", False, 
+                                            f"Job total rows ({latest_job['total_rows']}) doesn't match import result ({self.import_total_rows})")
+                        
+                    else:
+                        self.log_test("Admin Bulk Import Latest Job Status", False, 
+                                    f"Latest job status is '{latest_job['status']}', expected 'completed'")
+                else:
+                    self.log_test("Admin Bulk Import Latest Job Status", False, "No jobs found")
+                    
+            else:
+                self.log_test("Admin Bulk Import Jobs After Import", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("Admin Bulk Import Jobs After Import", False, f"Exception: {str(e)}")
+
+    def test_admin_bulk_import_job_by_id(self):
+        """Test GET /api/admin/bulk-import/jobs/{job_id} - Get individual job details"""
+        if not self.admin_token:
+            self.log_test("Admin Bulk Import Job By ID", False, "No admin token available")
+            return
+            
+        if not hasattr(self, 'latest_job_id') or not self.latest_job_id:
+            self.log_test("Admin Bulk Import Job By ID", False, "No job ID available")
+            return
+            
+        try:
+            response = self.make_request("GET", f"/admin/bulk-import/jobs/{self.latest_job_id}", 
+                                       headers={"Authorization": f"Bearer {self.admin_token}"})
+            
+            if response.status_code == 200:
+                job = response.json()
+                required_fields = ["id", "admin_username", "source_type", "source", "status", 
+                                 "total_rows", "processed_rows", "successful_imports", "failed_imports", 
+                                 "started_at"]
+                
+                if all(field in job for field in required_fields):
+                    self.log_test("Admin Bulk Import Job By ID", True, 
+                                f"Retrieved job details: {job['status']} job with {job['processed_rows']} processed rows")
+                    
+                    # Verify job details match expected values
+                    if job["id"] == self.latest_job_id:
+                        self.log_test("Admin Bulk Import Job ID Match", True, "Job ID matches requested ID")
+                    else:
+                        self.log_test("Admin Bulk Import Job ID Match", False, "Job ID doesn't match requested ID")
+                        
+                    # Verify job completion details
+                    if job["status"] == "completed" and job.get("finished_at"):
+                        self.log_test("Admin Bulk Import Job Completion", True, 
+                                    f"Job completed at {job['finished_at']}")
+                    else:
+                        self.log_test("Admin Bulk Import Job Completion", False, 
+                                    f"Job status: {job['status']}, finished_at: {job.get('finished_at', 'None')}")
+                        
+                else:
+                    missing_fields = [f for f in required_fields if f not in job]
+                    self.log_test("Admin Bulk Import Job By ID", False, f"Missing job fields: {missing_fields}")
+            else:
+                self.log_test("Admin Bulk Import Job By ID", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("Admin Bulk Import Job By ID", False, f"Exception: {str(e)}")
+
+    def test_admin_bulk_import_job_nonexistent(self):
+        """Test GET /api/admin/bulk-import/jobs/{nonexistent_id} - Handle non-existent job ID"""
+        if not self.admin_token:
+            self.log_test("Admin Bulk Import Job Nonexistent", False, "No admin token available")
+            return
+            
+        try:
+            nonexistent_id = "nonexistent-job-id-12345"
+            response = self.make_request("GET", f"/admin/bulk-import/jobs/{nonexistent_id}", 
+                                       headers={"Authorization": f"Bearer {self.admin_token}"})
+            
+            if response.status_code == 404:
+                self.log_test("Admin Bulk Import Job Nonexistent", True, "Correctly returned 404 for non-existent job ID")
+            else:
+                self.log_test("Admin Bulk Import Job Nonexistent", False, f"Expected 404, got {response.status_code}")
+                
+        except Exception as e:
+            self.log_test("Admin Bulk Import Job Nonexistent", False, f"Exception: {str(e)}")
+
     def run_all_tests(self):
         """Run all backend tests"""
         print(f"🚀 Starting Backend API Tests for Global Drama Verse Guide - REVIEW REQUEST FOCUS")
