@@ -2825,9 +2825,12 @@ Test Movie 2"""
 
     def run_all_tests(self):
         """Run all backend tests"""
-        print(f"🚀 Starting Backend API Tests for Global Drama Verse Guide - BULK IMPORT FOCUS")
+        print(f"🚀 Starting Backend API Tests for Global Drama Verse Guide - REVIEW REQUEST FOCUS")
         print(f"Backend URL: {self.base_url}")
         print("=" * 80)
+        
+        # Run the specific review request tests first
+        self.test_review_request_endpoints()
         
         # Admin authentication and bulk import tests (NEW - PRIORITY)
         print("\n📋 ADMIN BULK IMPORT TESTS (PRIORITY)")
