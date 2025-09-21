@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Footer from './Footer';
 import AdminDashboard from './AdminDashboard';
 import AdminLogin from './AdminLogin';
@@ -13,37 +13,25 @@ import ContentDetail from './ContentDetail';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// App Component
 function App() {
   const [darkTheme, setDarkTheme] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userType, setUserType] = useState(null); // 'admin' or 'user'
+  const [userType, setUserType] = useState(null);
   const [showUserAuth, setShowUserAuth] = useState(false);
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
-  const [isAdminMode, setIsAdminMode] = useState(false);
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     document.title = 'GDVG - Global Drama Verse Guide';
-
-    if (window.location.pathname.startsWith('/admin')) {
-      setIsAdminMode(true);
-      const adminToken = localStorage.getItem('admin_token');
-      if (adminToken) {
-        setIsAuthenticated(true);
-        setUserType('admin');
-      }
+    const userToken = localStorage.getItem('user_token');
+    if (userToken) {
+      setIsAuthenticated(true);
+      setUserType('user');
+      fetchUserProfile(userToken);
     } else {
-      const userToken = localStorage.getItem('user_token');
-      if (userToken) {
-        setIsAuthenticated(true);
-        setUserType('user');
-        fetchUserProfile(userToken);
-      } else {
-        fetchPublicContents('');
-      }
+      fetchPublicContents('');
     }
   }, []);
 
@@ -89,11 +77,6 @@ function App() {
     window.location.assign('/');
   };
 
-  const openUserAuth = (isLogin) => {
-    setIsLoginMode(isLogin);
-    setShowUserAuth(true);
-  };
-
   const HomePage = () => {
     const navigate = useNavigate();
 
@@ -109,20 +92,20 @@ function App() {
           <div className="sticky top-0 z-40">
             <nav className={`flex items-center justify-between px-2 py-3 ${darkTheme ? 'bg-black/70 backdrop-blur' : 'bg-white/80 backdrop-blur border-b border-gray-200'}`}>
               <div className="flex items-center gap-6">
-                <button onClick={() => window.location.assign('/')} className="focus:outline-none">
+                <button onClick={() => navigate('/')} className="focus:outline-none">
                   <span className="text-3xl font-extrabold tracking-wide text-red-600">GDVG</span>
                 </button>
                 <ul className={`hidden md:flex items-center gap-4 ${darkTheme ? 'text-gray-300' : 'text-gray-700'}`}>
-                  <li><button onClick={() => window.location.assign('/')} className="hover:text-white">Home</button></li>
+                  <li><button onClick={() => navigate('/')} className="hover:text-white">Home</button></li>
                   <li><button onClick={() => document.getElementById('discover-anchor')?.scrollIntoView({behavior:'smooth'})} className="hover:text-white">Discover</button></li>
-                  <li><button onClick={() => window.location.assign('/admin')} className="hover:text-white">Admin</button></li>
+                  <li><button onClick={() => navigate('/admin')} className="hover:text-white">Admin</button></li>
                 </ul>
               </div>
               <div className="flex items-center gap-2">
                 {!isAuthenticated ? (
                   <>
-                    <button onClick={() => openUserAuth(true)} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">Sign In</button>
-                    <button onClick={() => openUserAuth(false)} className={`px-4 py-2 rounded ${darkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'}`}>Sign Up</button>
+                    <button onClick={() => setShowUserAuth(true)} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">Sign In</button>
+                    <button onClick={() => { setIsLoginMode(false); setShowUserAuth(true); }} className={`px-4 py-2 rounded ${darkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'}`}>Sign Up</button>
                   </>
                 ) : (
                   <button onClick={handleLogout} className={`px-4 py-2 rounded ${darkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'}`}>Logout</button>
@@ -134,7 +117,7 @@ function App() {
           {/* Hero + Featured */}
           <FeaturedSections darkTheme={darkTheme} handleContentClick={handleContentClick} />
 
-          <div className="mt-12">
+          <div id="discover-anchor" className="mt-12">
             <h2 className={`text-2xl font-bold mb-4 ${darkTheme ? 'text-white' : 'text-gray-900'}`}>All Content</h2>
             <ContentGrid contents={contents} darkTheme={darkTheme} onContentClick={handleContentClick} loading={loading} />
           </div>
@@ -151,9 +134,9 @@ function App() {
   const AdminRoutes = () => {
     return (
       <Routes>
-        <Route path="/admin" element={<AdminLogin darkTheme={darkTheme} />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard darkTheme={darkTheme} />} />
-        <Route path="/admin/content" element={<ContentManagement darkTheme={darkTheme} />} />
+        <Route index element={<AdminLogin darkTheme={darkTheme} />} />
+        <Route path="dashboard" element={<AdminDashboard darkTheme={darkTheme} />} />
+        <Route path="content" element={<ContentManagement darkTheme={darkTheme} />} />
       </Routes>
     );
   };
@@ -191,26 +174,16 @@ function App() {
   );
 }
 
-// Content Grid Component
+// Content Grid Component (unchanged)
 const ContentGrid = ({ contents, darkTheme, onContentClick, loading }) => {
   const navigate = useNavigate();
-
-  const formatTitleForUrl = (title) => {
-    return (title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '') || 'untitled';
-  };
-
-  const handleContentClick = (content) => {
-    const slug = formatTitleForUrl(content.slug || content.title);
-    navigate(`/content/${content.id}/${slug}`);
-  };
-
+  const formatTitleForUrl = (title) => (title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '') || 'untitled';
+  const handleContentClick = (content) => navigate(`/content/${content.id}/${formatTitleForUrl(content.slug || content.title)}`);
   if (loading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
         {[...Array(10)].map((_, i) => (
-          <div key={i} className={`animate-pulse rounded-xl ${
-            darkTheme ? 'bg-gray-900 border border-gray-800' : 'bg-gray-200'
-          }`}>
+          <div key={i} className={`animate-pulse rounded-xl ${darkTheme ? 'bg-gray-900 border border-gray-800' : 'bg-gray-200'}`}>
             <div className="aspect-[2/3] rounded-t-xl bg-current opacity-20" />
             <div className="p-4 space-y-2">
               <div className="h-4 bg-current opacity-20 rounded" />
@@ -222,7 +195,6 @@ const ContentGrid = ({ contents, darkTheme, onContentClick, loading }) => {
       </div>
     );
   }
-
   if (contents.length === 0) {
     return (
       <div className={`text-center py-16 ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
@@ -234,7 +206,6 @@ const ContentGrid = ({ contents, darkTheme, onContentClick, loading }) => {
       </div>
     );
   }
-
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
       {contents.map((content) => (
