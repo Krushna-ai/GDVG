@@ -9,6 +9,7 @@ import json
 import sys
 from typing import Dict, Any, List
 import time
+import io
 
 # Get backend URL from frontend .env
 BACKEND_URL = "https://dramaguide.preview.emergentagent.com/api"
