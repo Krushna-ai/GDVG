@@ -254,6 +254,18 @@ async def strip_id(doc: dict) -> dict:
     doc.pop('_id', None)
     return doc
 
+def convert_datetime_fields(doc: dict) -> dict:
+    """Convert datetime objects to ISO strings for Pydantic compatibility"""
+    if not doc:
+        return doc
+    
+    datetime_fields = ['created_at', 'updated_at', 'joined_date', 'last_login', 'started_at', 'finished_at']
+    for field in datetime_fields:
+        if field in doc and hasattr(doc[field], 'isoformat'):
+            doc[field] = doc[field].isoformat()
+    
+    return doc
+
 async def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(security)) -> AdminUser:
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
