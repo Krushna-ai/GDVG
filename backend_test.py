@@ -2706,6 +2706,123 @@ All Empty,,,,,"""
         except Exception as e:
             self.log_test("Content Endpoints Post-Import", False, f"Exception: {str(e)}")
 
+    def test_review_request_endpoints(self):
+        """Test specific endpoints mentioned in the review request"""
+        print(f"\n🎯 TESTING REVIEW REQUEST ENDPOINTS")
+        print("=" * 50)
+        
+        # Test 1: GET /api/health should return 200 {status: ok}
+        try:
+            response = self.make_request("GET", "/health")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "status" in data and data["status"] == "ok":
+                    self.log_test("Health Endpoint", True, "Health endpoint returned correct status")
+                else:
+                    self.log_test("Health Endpoint", False, f"Unexpected response: {data}")
+            else:
+                self.log_test("Health Endpoint", False, f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            self.log_test("Health Endpoint", False, f"Exception: {str(e)}")
+        
+        # Test 2: POST /api/admin/login with {username:'admin', password:'admin123'} should return 200 with access_token
+        try:
+            admin_data = {
+                "username": "admin",
+                "password": "admin123"
+            }
+            
+            response = self.make_request("POST", "/admin/login", json=admin_data)
+            
+            if response.status_code == 200:
+                token_data = response.json()
+                if "access_token" in token_data and "token_type" in token_data:
+                    self.admin_token = token_data["access_token"]
+                    self.log_test("Admin Login", True, "Admin login successful with access token")
+                else:
+                    self.log_test("Admin Login", False, "Missing token fields in response")
+            else:
+                self.log_test("Admin Login", False, f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            self.log_test("Admin Login", False, f"Exception: {str(e)}")
+        
+        # Test 3: GET /api/content should return list (>= 0)
+        try:
+            response = self.make_request("GET", "/content")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "contents" in data and isinstance(data["contents"], list):
+                    content_count = len(data["contents"])
+                    self.log_test("Content List", True, f"Content list returned {content_count} items")
+                    # Store first content ID for later tests
+                    if content_count > 0:
+                        self.sample_content_id = data["contents"][0]["id"]
+                else:
+                    self.log_test("Content List", False, "Invalid response format")
+            else:
+                self.log_test("Content List", False, f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            self.log_test("Content List", False, f"Exception: {str(e)}")
+        
+        # Test 4: POST /api/admin/bulk-import/template requires admin token; expect 200
+        if self.admin_token:
+            try:
+                headers = {'Authorization': f'Bearer {self.admin_token}'}
+                response = self.make_request("GET", "/admin/bulk-import/template", headers=headers)
+                
+                if response.status_code == 200:
+                    self.log_test("Bulk Import Template", True, "Template endpoint accessible with admin token")
+                else:
+                    self.log_test("Bulk Import Template", False, f"HTTP {response.status_code}: {response.text}")
+            except Exception as e:
+                self.log_test("Bulk Import Template", False, f"Exception: {str(e)}")
+        else:
+            self.log_test("Bulk Import Template", False, "No admin token available")
+        
+        # Test 5: POST /api/admin/bulk-import/preview with small CSV should return preview
+        if self.admin_token:
+            try:
+                csv_content = """title
+Test Drama 1
+Test Movie 2"""
+                
+                files = {
+                    'file': ('test_preview.csv', csv_content, 'text/csv')
+                }
+                
+                headers = {'Authorization': f'Bearer {self.admin_token}'}
+                response = self.make_request("POST", "/admin/bulk-import/preview", files=files, headers=headers)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if "preview" in data and "total_rows" in data:
+                        self.log_test("Bulk Import Preview", True, f"Preview returned for {data['total_rows']} rows")
+                    else:
+                        self.log_test("Bulk Import Preview", False, "Invalid preview response format")
+                else:
+                    self.log_test("Bulk Import Preview", False, f"HTTP {response.status_code}: {response.text}")
+            except Exception as e:
+                self.log_test("Bulk Import Preview", False, f"Exception: {str(e)}")
+        else:
+            self.log_test("Bulk Import Preview", False, "No admin token available")
+        
+        # Test 6: GET /api/content/featured returns 200
+        try:
+            response = self.make_request("GET", "/content/featured")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list):
+                    self.log_test("Featured Content", True, f"Featured content returned {len(data)} items")
+                else:
+                    self.log_test("Featured Content", False, "Featured content not a list")
+            else:
+                self.log_test("Featured Content", False, f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            self.log_test("Featured Content", False, f"Exception: {str(e)}")
+
     def run_all_tests(self):
         """Run all backend tests"""
         print(f"🚀 Starting Backend API Tests for Global Drama Verse Guide - BULK IMPORT FOCUS")
