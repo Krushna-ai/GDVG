@@ -78,12 +78,15 @@ const WatchlistButton = ({ content, darkTheme, size = 'md' }) => {
       setShowDropdown(false);
     } catch (error) {
       console.error('Error adding to watchlist:', error);
+      const msg = error.response?.data?.detail || (typeof error.response?.data === 'string' ? error.response.data : null);
       if (error.response?.status === 401) {
         alert('Please sign in to add content to your watchlist');
       } else if (error.response?.status === 400) {
-        alert('This content is already in your watchlist');
+        alert(msg || 'This content is already in your watchlist');
+      } else if (error.response) {
+        alert(`Failed to add to watchlist (${error.response.status}): ${msg || 'Unknown error'}`);
       } else {
-        alert('Failed to add to watchlist');
+        alert('Failed to add to watchlist: network error');
       }
     } finally {
       setLoading(false);
