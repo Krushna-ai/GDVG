@@ -22,6 +22,7 @@ function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showLogoMenu, setShowLogoMenu] = useState(false);
 
   useEffect(() => {
     document.title = 'GDVG - Global Drama Verse Guide';
@@ -30,21 +31,27 @@ function App() {
       setIsAuthenticated(true);
       setUserType('user');
       fetchUserProfile(userToken);
-    } else {
-      fetchPublicContents('');
     }
+    // Always fetch public contents on landing regardless of user/admin tokens
+    fetchPublicContents('');
   }, []);
 
   const fetchPublicContents = async (search = '') => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (search) params.append('search', search);
-      const response = await axios.get(`${API}/content?${params}`);
+      const params = {};
+      if (search && search.trim()) params.search = search.trim();
+      const response = await axios.get(`${API}/content`, { params });
       setContents(response.data.contents || []);
     } catch (error) {
-      console.error('Error fetching contents:', error);
-      setContents([]);
+      console.error('Error fetching contents:', error?.response?.data || error.message);
+      // Retry once without params in case of URL formatting edge cases
+      try {
+        const response2 = await axios.get(`${API}/content`);
+        setContents(response2.data.contents || []);
+      } catch (e2) {
+        setContents([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -88,13 +95,28 @@ function App() {
     return (
       <div className={`min-h-screen ${darkTheme ? 'bg-black' : 'bg-gray-50'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Netflix-style top nav */}
+          {/* Top nav with GDVG logo dropdown */}
           <div className="sticky top-0 z-40">
             <nav className={`flex items-center justify-between px-2 py-3 ${darkTheme ? 'bg-black/70 backdrop-blur' : 'bg-white/80 backdrop-blur border-b border-gray-200'}`}>
-              <div className="flex items-center gap-6">
-                <button onClick={() => navigate('/')} className="focus:outline-none">
+              <div className="relative flex items-center gap-6">
+                <button onClick={() => setShowLogoMenu((s) => !s)} className="focus:outline-none">
                   <span className="text-3xl font-extrabold tracking-wide text-red-600">GDVG</span>
                 </button>
+                {showLogoMenu && (
+                  <div className={`absolute top-10 left-0 w-56 rounded-lg shadow-xl ${darkTheme ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200'}`}>
+                    <button onClick={() => { setShowLogoMenu(false); navigate('/'); }} className={`w-full text-left px-4 py-3 ${darkTheme ? 'text-gray-200 hover:bg-gray-800' : 'text-gray-800 hover:bg-gray-100'}`}>Home</button>
+                    <button onClick={() => { setShowLogoMenu(false); document.getElementById('discover-anchor')?.scrollIntoView({behavior:'smooth'}); }} className={`w-full text-left px-4 py-3 ${darkTheme ? 'text-gray-200 hover:bg-gray-800' : 'text-gray-800 hover:bg-gray-100'}`}>Discover</button>
+                    <button onClick={() => { setShowLogoMenu(false); navigate('/admin'); }} className={`w-full text-left px-4 py-3 ${darkTheme ? 'text-gray-200 hover:bg-gray-800' : 'text-gray-800 hover:bg-gray-100'}`}>Admin</button>
+                    {isAuthenticated ? (
+                      <button onClick={() => { setShowLogoMenu(false); handleLogout(); }} className={`w-full text-left px-4 py-3 ${darkTheme ? 'text-red-300 hover:bg-gray-800' : 'text-red-600 hover:bg-gray-100'}`}>Logout</button>
+                    ) : (
+                      <>
+                        <button onClick={() => { setShowLogoMenu(false); setShowUserAuth(true); setIsLoginMode(true); }} className={`w-full text-left px-4 py-3 ${darkTheme ? 'text-gray-200 hover:bg-gray-800' : 'text-gray-800 hover:bg-gray-100'}`}>Sign In</button>
+                        <button onClick={() => { setShowLogoMenu(false); setShowUserAuth(true); setIsLoginMode(false); }} className={`w-full text-left px-4 py-3 ${darkTheme ? 'text-gray-200 hover:bg-gray-800' : 'text-gray-800 hover:bg-gray-100'}`}>Sign Up</button>
+                      </>
+                    )}
+                  </div>
+                )}
                 <ul className={`hidden md:flex items-center gap-4 ${darkTheme ? 'text-gray-300' : 'text-gray-700'}`}>
                   <li><button onClick={() => navigate('/')} className="hover:text-white">Home</button></li>
                   <li><button onClick={() => document.getElementById('discover-anchor')?.scrollIntoView({behavior:'smooth'})} className="hover:text-white">Discover</button></li>
@@ -105,10 +127,10 @@ function App() {
                 {!isAuthenticated ? (
                   <>
                     <button onClick={() => setShowUserAuth(true)} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">Sign In</button>
-                    <button onClick={() => { setIsLoginMode(false); setShowUserAuth(true); }} className={`px-4 py-2 rounded ${darkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'}`}>Sign Up</button>
+                    <button onClick={() => { setIsLoginMode(false); setShowUserAuth(true); }} className={`${darkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'} px-4 py-2 rounded`}>Sign Up</button>
                   </>
                 ) : (
-                  <button onClick={handleLogout} className={`px-4 py-2 rounded ${darkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'}`}>Logout</button>
+                  <button onClick={handleLogout} className={`${darkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'} px-4 py-2 rounded`}>Logout</button>
                 )}
               </div>
             </nav>
@@ -134,7 +156,6 @@ function App() {
   const AdminRoutes = () => {
     const navigate = useNavigate();
     const handleAdminLogout = () => {
-      // Clear tokens and route to admin login
       localStorage.removeItem('admin_token');
       navigate('/admin');
     };
@@ -180,7 +201,7 @@ function App() {
   );
 }
 
-// Content Grid Component (unchanged)
+// Content Grid Component
 const ContentGrid = ({ contents, darkTheme, onContentClick, loading }) => {
   const navigate = useNavigate();
   const formatTitleForUrl = (title) => (title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '') || 'untitled';
@@ -209,6 +230,7 @@ const ContentGrid = ({ contents, darkTheme, onContentClick, loading }) => {
         </svg>
         <p className="text-lg font-medium">No content found</p>
         <p className="text-sm">Try adjusting your search or filters</p>
+        <button onClick={() => window.location.assign('/')} className="mt-4 px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">Refresh</button>
       </div>
     );
   }
