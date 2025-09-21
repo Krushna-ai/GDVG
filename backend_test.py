@@ -2716,28 +2716,15 @@ All Empty,,,,,"""
     def test_review_request_bulk_import_endpoints(self):
         """Test new Bulk Import progress/history endpoints (Priority D) as requested in review"""
         print(f"\n🎯 TESTING REVIEW REQUEST - BULK IMPORT PROGRESS/HISTORY ENDPOINTS (Priority D)")
+        print(f"Using admin credentials: {ADMIN_USERNAME} / {ADMIN_PASSWORD}")
+        print(f"CSV URL: {CSV_URL}")
         print("=" * 80)
         
-        # Test 1: GET /api/health should return 200 {status: ok}
-        try:
-            response = self.make_request("GET", "/health")
-            
-            if response.status_code == 200:
-                data = response.json()
-                if "status" in data and data["status"] == "ok":
-                    self.log_test("Health Endpoint", True, "Health endpoint returned correct status")
-                else:
-                    self.log_test("Health Endpoint", False, f"Unexpected response: {data}")
-            else:
-                self.log_test("Health Endpoint", False, f"HTTP {response.status_code}: {response.text}")
-        except Exception as e:
-            self.log_test("Health Endpoint", False, f"Exception: {str(e)}")
-        
-        # Test 2: POST /api/admin/login with {username:'admin', password:'admin123'} should return 200 with access_token
+        # Test 1: POST /api/admin/login -> token (using provided credentials)
         try:
             admin_data = {
-                "username": "admin",
-                "password": "admin123"
+                "username": ADMIN_USERNAME,  # globaldramaverseguide45@gmail.com
+                "password": ADMIN_PASSWORD   # krushna45
             }
             
             response = self.make_request("POST", "/admin/login", json=admin_data)
@@ -2746,89 +2733,179 @@ All Empty,,,,,"""
                 token_data = response.json()
                 if "access_token" in token_data and "token_type" in token_data:
                     self.admin_token = token_data["access_token"]
-                    self.log_test("Admin Login", True, "Admin login successful with access token")
+                    self.log_test("1) POST /api/admin/login", True, "Admin login successful with provided credentials")
                 else:
-                    self.log_test("Admin Login", False, "Missing token fields in response")
+                    self.log_test("1) POST /api/admin/login", False, "Missing token fields in response")
             else:
-                self.log_test("Admin Login", False, f"HTTP {response.status_code}: {response.text}")
+                self.log_test("1) POST /api/admin/login", False, f"HTTP {response.status_code}: {response.text}")
         except Exception as e:
-            self.log_test("Admin Login", False, f"Exception: {str(e)}")
+            self.log_test("1) POST /api/admin/login", False, f"Exception: {str(e)}")
         
-        # Test 3: GET /api/content should return list (>= 0)
+        if not self.admin_token:
+            print("❌ Cannot continue without admin token")
+            return
+        
+        # Test 2: GET /api/admin/bulk-import/jobs -> 200 {jobs, total, page, limit}
         try:
-            response = self.make_request("GET", "/content")
+            response = self.make_request("GET", "/admin/bulk-import/jobs", 
+                                       headers={"Authorization": f"Bearer {self.admin_token}"})
             
             if response.status_code == 200:
-                data = response.json()
-                if "contents" in data and isinstance(data["contents"], list):
-                    content_count = len(data["contents"])
-                    self.log_test("Content List", True, f"Content list returned {content_count} items")
-                    # Store first content ID for later tests
-                    if content_count > 0:
-                        self.sample_content_id = data["contents"][0]["id"]
+                result = response.json()
+                required_fields = ["jobs", "total", "page", "limit"]
+                
+                if all(field in result for field in required_fields):
+                    self.initial_job_count = result["total"]
+                    self.log_test("2) GET /api/admin/bulk-import/jobs", True, 
+                                f"Retrieved jobs list: {len(result['jobs'])} jobs, total: {result['total']}")
                 else:
-                    self.log_test("Content List", False, "Invalid response format")
+                    missing_fields = [f for f in required_fields if f not in result]
+                    self.log_test("2) GET /api/admin/bulk-import/jobs", False, f"Missing response fields: {missing_fields}")
             else:
-                self.log_test("Content List", False, f"HTTP {response.status_code}: {response.text}")
+                self.log_test("2) GET /api/admin/bulk-import/jobs", False, f"HTTP {response.status_code}: {response.text}")
         except Exception as e:
-            self.log_test("Content List", False, f"Exception: {str(e)}")
+            self.log_test("2) GET /api/admin/bulk-import/jobs", False, f"Exception: {str(e)}")
         
-        # Test 4: POST /api/admin/bulk-import/template requires admin token; expect 200
-        if self.admin_token:
-            try:
-                headers = {'Authorization': f'Bearer {self.admin_token}'}
-                response = self.make_request("GET", "/admin/bulk-import/template", headers=headers)
+        # Test 3: POST /api/admin/bulk-import/preview-url with Top_Drama199.csv URL -> 200 with preview data
+        try:
+            preview_data = {
+                "csv_url": CSV_URL
+            }
+            
+            response = self.make_request("POST", "/admin/bulk-import/preview-url", 
+                                       json=preview_data, 
+                                       headers={"Authorization": f"Bearer {self.admin_token}"})
+            
+            if response.status_code == 200:
+                result = response.json()
+                required_fields = ["total_rows", "will_import", "will_skip", "detected_columns", "preview"]
                 
-                if response.status_code == 200:
-                    self.log_test("Bulk Import Template", True, "Template endpoint accessible with admin token")
+                if all(field in result for field in required_fields):
+                    self.preview_total_rows = result['total_rows']
+                    self.preview_will_import = result['will_import']
+                    self.preview_will_skip = result['will_skip']
+                    self.log_test("3) POST /api/admin/bulk-import/preview-url", True, 
+                                f"Preview generated: {result['total_rows']} total rows, {result['will_import']} will import, {result['will_skip']} will skip")
                 else:
-                    self.log_test("Bulk Import Template", False, f"HTTP {response.status_code}: {response.text}")
-            except Exception as e:
-                self.log_test("Bulk Import Template", False, f"Exception: {str(e)}")
-        else:
-            self.log_test("Bulk Import Template", False, "No admin token available")
+                    missing_fields = [f for f in required_fields if f not in result]
+                    self.log_test("3) POST /api/admin/bulk-import/preview-url", False, f"Missing response fields: {missing_fields}")
+            else:
+                self.log_test("3) POST /api/admin/bulk-import/preview-url", False, f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            self.log_test("3) POST /api/admin/bulk-import/preview-url", False, f"Exception: {str(e)}")
         
-        # Test 5: POST /api/admin/bulk-import/preview with small CSV should return preview
-        if self.admin_token:
-            try:
-                csv_content = """title
-Test Drama 1
-Test Movie 2"""
+        # Test 4: POST /api/admin/bulk-import/from-url with same URL -> 200 result; capture returned counts
+        try:
+            import_data = {
+                "csv_url": CSV_URL
+            }
+            
+            response = self.make_request("POST", "/admin/bulk-import/from-url", 
+                                       json=import_data, 
+                                       headers={"Authorization": f"Bearer {self.admin_token}"})
+            
+            if response.status_code == 200:
+                result = response.json()
+                required_fields = ["success", "total_rows", "successful_imports", "failed_imports"]
                 
-                files = {
-                    'file': ('test_preview.csv', csv_content, 'text/csv')
-                }
+                if all(field in result for field in required_fields):
+                    self.import_total_rows = result['total_rows']
+                    self.import_successful = result['successful_imports']
+                    self.import_failed = result['failed_imports']
+                    self.log_test("4) POST /api/admin/bulk-import/from-url", True, 
+                                f"Import completed: {result['successful_imports']} successful, {result['failed_imports']} failed out of {result['total_rows']} total")
+                else:
+                    missing_fields = [f for f in required_fields if f not in result]
+                    self.log_test("4) POST /api/admin/bulk-import/from-url", False, f"Missing response fields: {missing_fields}")
+            else:
+                self.log_test("4) POST /api/admin/bulk-import/from-url", False, f"HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            self.log_test("4) POST /api/admin/bulk-import/from-url", False, f"Exception: {str(e)}")
+        
+        # Wait a moment for job to complete
+        time.sleep(2)
+        
+        # Test 5: GET /api/admin/bulk-import/jobs again -> total incremented by 1 (or job exists), and latest job has status completed
+        try:
+            response = self.make_request("GET", "/admin/bulk-import/jobs", 
+                                       headers={"Authorization": f"Bearer {self.admin_token}"})
+            
+            if response.status_code == 200:
+                result = response.json()
+                current_total = result["total"]
+                jobs = result["jobs"]
                 
-                headers = {'Authorization': f'Bearer {self.admin_token}'}
-                response = self.make_request("POST", "/admin/bulk-import/preview", files=files, headers=headers)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    if "preview" in data and "total_rows" in data:
-                        self.log_test("Bulk Import Preview", True, f"Preview returned for {data['total_rows']} rows")
+                # Check if total increased or at least one job exists
+                if hasattr(self, 'initial_job_count'):
+                    if current_total > self.initial_job_count:
+                        self.log_test("5a) Job count verification", True, 
+                                    f"Job count increased from {self.initial_job_count} to {current_total}")
+                    elif current_total == self.initial_job_count and current_total > 0:
+                        self.log_test("5a) Job count verification", True, 
+                                    f"Job count remained at {current_total} (job may have existed)")
                     else:
-                        self.log_test("Bulk Import Preview", False, "Invalid preview response format")
+                        self.log_test("5a) Job count verification", False, 
+                                    f"Job count issue: from {self.initial_job_count} to {current_total}")
+                
+                # Verify latest job status and processed rows
+                if len(jobs) > 0:
+                    latest_job = jobs[0]  # Jobs are sorted by started_at desc
+                    
+                    if latest_job["status"] == "completed":
+                        self.log_test("5b) Latest job status", True, 
+                                    f"Latest job completed with status: {latest_job['status']}")
+                        
+                        # Verify processed rows match total rows
+                        if latest_job["processed_rows"] == latest_job["total_rows"]:
+                            self.log_test("5c) Job progress verification", True, 
+                                        f"Job fully processed: {latest_job['processed_rows']}/{latest_job['total_rows']} rows")
+                        else:
+                            self.log_test("5c) Job progress verification", False, 
+                                        f"Job not fully processed: {latest_job['processed_rows']}/{latest_job['total_rows']} rows")
+                        
+                        # Store latest job ID for individual job test
+                        self.latest_job_id = latest_job["id"]
+                    else:
+                        self.log_test("5b) Latest job status", False, 
+                                    f"Latest job status is '{latest_job['status']}', expected 'completed'")
                 else:
-                    self.log_test("Bulk Import Preview", False, f"HTTP {response.status_code}: {response.text}")
-            except Exception as e:
-                self.log_test("Bulk Import Preview", False, f"Exception: {str(e)}")
-        else:
-            self.log_test("Bulk Import Preview", False, "No admin token available")
-        
-        # Test 6: GET /api/content/featured returns 200
-        try:
-            response = self.make_request("GET", "/content/featured")
-            
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list):
-                    self.log_test("Featured Content", True, f"Featured content returned {len(data)} items")
-                else:
-                    self.log_test("Featured Content", False, "Featured content not a list")
+                    self.log_test("5) GET /api/admin/bulk-import/jobs (after import)", False, "No jobs found")
+                    
             else:
-                self.log_test("Featured Content", False, f"HTTP {response.status_code}: {response.text}")
+                self.log_test("5) GET /api/admin/bulk-import/jobs (after import)", False, f"HTTP {response.status_code}: {response.text}")
         except Exception as e:
-            self.log_test("Featured Content", False, f"Exception: {str(e)}")
+            self.log_test("5) GET /api/admin/bulk-import/jobs (after import)", False, f"Exception: {str(e)}")
+        
+        # Test 6: Negative test - GET /api/admin/bulk-import/jobs/{nonexistent} -> 404
+        try:
+            nonexistent_id = "nonexistent-job-id-12345"
+            response = self.make_request("GET", f"/admin/bulk-import/jobs/{nonexistent_id}", 
+                                       headers={"Authorization": f"Bearer {self.admin_token}"})
+            
+            if response.status_code == 404:
+                self.log_test("6) GET /api/admin/bulk-import/jobs/{nonexistent}", True, "Correctly returned 404 for non-existent job ID")
+            else:
+                self.log_test("6) GET /api/admin/bulk-import/jobs/{nonexistent}", False, f"Expected 404, got {response.status_code}")
+        except Exception as e:
+            self.log_test("6) GET /api/admin/bulk-import/jobs/{nonexistent}", False, f"Exception: {str(e)}")
+        
+        # Bonus: Test individual job retrieval if we have a job ID
+        if hasattr(self, 'latest_job_id') and self.latest_job_id:
+            try:
+                response = self.make_request("GET", f"/admin/bulk-import/jobs/{self.latest_job_id}", 
+                                           headers={"Authorization": f"Bearer {self.admin_token}"})
+                
+                if response.status_code == 200:
+                    job = response.json()
+                    if "id" in job and job["id"] == self.latest_job_id:
+                        self.log_test("Bonus) GET /api/admin/bulk-import/jobs/{job_id}", True, 
+                                    f"Retrieved individual job: {job['status']} with {job['processed_rows']} processed rows")
+                    else:
+                        self.log_test("Bonus) GET /api/admin/bulk-import/jobs/{job_id}", False, "Job ID mismatch")
+                else:
+                    self.log_test("Bonus) GET /api/admin/bulk-import/jobs/{job_id}", False, f"HTTP {response.status_code}")
+            except Exception as e:
+                self.log_test("Bonus) GET /api/admin/bulk-import/jobs/{job_id}", False, f"Exception: {str(e)}")
 
     def test_admin_bulk_import_preview_url(self):
         """Test POST /api/admin/bulk-import/preview-url - Preview CSV import from URL"""
