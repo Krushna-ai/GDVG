@@ -2713,10 +2713,10 @@ All Empty,,,,,"""
         except Exception as e:
             self.log_test("Content Endpoints Post-Import", False, f"Exception: {str(e)}")
 
-    def test_review_request_endpoints(self):
-        """Test specific endpoints mentioned in the review request"""
-        print(f"\n🎯 TESTING REVIEW REQUEST ENDPOINTS")
-        print("=" * 50)
+    def test_review_request_bulk_import_endpoints(self):
+        """Test new Bulk Import progress/history endpoints (Priority D) as requested in review"""
+        print(f"\n🎯 TESTING REVIEW REQUEST - BULK IMPORT PROGRESS/HISTORY ENDPOINTS (Priority D)")
+        print("=" * 80)
         
         # Test 1: GET /api/health should return 200 {status: ok}
         try:
