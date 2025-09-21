@@ -290,6 +290,12 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     if not doc:
         raise HTTPException(status_code=401, detail='User not found')
     doc.pop('_id', None)
+    
+    # Convert datetime objects to strings if they exist
+    for field in ['joined_date', 'last_login']:
+        if field in doc and hasattr(doc[field], 'isoformat'):
+            doc[field] = doc[field].isoformat()
+    
     return User(**doc)
 
 # Parsing helpers
