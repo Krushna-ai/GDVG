@@ -393,13 +393,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Health Endpoint"
+    - "Priority A: Homepage visibility + navigation to ContentDetail"
     - "Admin Bulk Import System"
     - "Content API endpoints"
   stuck_tasks:
-    - "Health Endpoint"
-    - "Admin Bulk Import System" 
-    - "Content API endpoints"
+    - "None"
   test_all: false
   - task: "Priority A: Homepage visibility + navigation to ContentDetail"
 
