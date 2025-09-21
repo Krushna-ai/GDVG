@@ -146,12 +146,35 @@ function App() {
   };
 
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/content/:id/:title" element={<ContentDetail darkTheme={darkTheme} currentUser={currentUser} />} />
-      <Route path="/admin/*" element={<AdminRoutes />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/content/:id/:title" element={<ContentDetail darkTheme={darkTheme} currentUser={currentUser} />} />
+        <Route path="/admin/*" element={<AdminRoutes />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+
+      {showUserAuth && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setShowUserAuth(false)} />
+          <div className="relative z-10">
+            <UserAuth 
+              onLogin={(token, type) => {
+                handleLogin(token, type);
+                fetchPublicContents('');
+              }}
+              darkTheme={darkTheme}
+              isLogin={isLoginMode}
+              setIsLogin={setIsLoginMode}
+              onClose={() => {
+                setShowUserAuth(false);
+                fetchPublicContents('');
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
