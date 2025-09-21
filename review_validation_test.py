@@ -10,7 +10,7 @@ import sys
 from typing import Dict, Any
 
 # Get backend URL from frontend .env
-BACKEND_URL = "https://dramaguide.preview.emergentagent.com/api"
+BACKEND_URL = "https://routefix-drama.preview.emergentagent.com/api"
 
 class ReviewValidationTester:
     def __init__(self):

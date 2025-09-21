@@ -12,7 +12,7 @@ import time
 import io
 
 # Get backend URL from frontend .env
-BACKEND_URL = "https://dramaguide.preview.emergentagent.com/api"
+BACKEND_URL = "https://routefix-drama.preview.emergentagent.com/api"
 
 class BackendTester:
     def __init__(self):
