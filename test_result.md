@@ -105,6 +105,18 @@
 user_problem_statement: "Build Global Drama Verse Guide - a comprehensive global entertainment database inspired by IMDb, MyDramaList, Netflix interfaces with beautiful UI for discovering dramas/movies from all regions. Currently implementing Week 3 Social Features: Day 4-7 ✅ COMPLETED (Watchlist, Rating/Review, Personal Analytics, Social Core), Day 8-9 ✅ COMPLETED - Enhanced Social Interactions with review likes/comments, notifications, and trending users. Week 3 Social Features FULLY IMPLEMENTED with 84.6% backend success rate!"
 
 backend:
+  - task: "Health Endpoint"
+    implemented: false
+    working: false
+    file: "server.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL: Health endpoint NOT IMPLEMENTED. GET /api/health returns 404 Not Found. The server.py file is missing the health endpoint route definition. URGENT: Main agent must implement GET /api/health endpoint that returns 200 with {status: ok}."
+
   - task: "Admin Bulk Import System"
     implemented: false
     working: false
