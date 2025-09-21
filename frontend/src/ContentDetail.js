@@ -22,7 +22,6 @@ const ContentDetail = ({ darkTheme, currentUser }) => {
 
   useEffect(() => {
     if (content) fetchRelatedContent(content);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content?.id]);
 
   const fetchContentDetail = async () => {
