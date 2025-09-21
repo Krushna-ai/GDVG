@@ -402,6 +402,9 @@ test_plan:
     - "Content API endpoints"
   test_all: false
   - task: "Priority A: Homepage visibility + navigation to ContentDetail"
+
+# Update test plan focus for backend and frontend
+
     implemented: true
     working: "NA"
     file: "frontend/src/App.js, frontend/src/FeaturedSections.js, frontend/src/ContentDetail.js, backend/server.py"
