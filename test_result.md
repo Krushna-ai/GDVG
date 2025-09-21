@@ -403,26 +403,9 @@ metadata:
 test_plan:
   current_focus:
     - "Priority A: Homepage visibility + navigation to ContentDetail"
-    - "Admin Bulk Import System"
-    - "Content API endpoints"
   stuck_tasks:
     - "None"
   test_all: false
-  - task: "Priority A: Homepage visibility + navigation to ContentDetail"
-
-# Update test plan focus for backend and frontend
-
-    implemented: true
-    working: "NA"
-    file: "frontend/src/App.js, frontend/src/FeaturedSections.js, frontend/src/ContentDetail.js, backend/server.py"
-    stuck_count: 0
-    priority: "high"
-    needs_retesting: true
-    status_history:
-      - working: true
-        agent: "main"
-        comment: "Restored/verified all critical /api routes, seeded email-based admin, re-imported Top_Drama199.csv with skip-duplicates (all duplicates as existing), fixed ContentDetail to use API schema (id, poster_url, content_type, genres), ensured card navigation uses /content/:id/:slug. Homepage grid pulls from /api/content and featured sections from /api/content/featured. Ready for backend then frontend automated tests."
-
   test_priority: "high_first"
 
   - task: "Day 8-9: Enhanced Social Interactions - Review Likes"
