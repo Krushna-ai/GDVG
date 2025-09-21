@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 import pandas as pd
 import uuid
@@ -42,6 +42,11 @@ SECRET_KEY = os.environ.get('JWT_SECRET', 'gdvg-secret-key-2025')
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
 
+# Helpers: time strings
+
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
 # Enums
 class ContentType(str, Enum):
     DRAMA = "drama"
@@ -69,7 +74,7 @@ class AdminUser(BaseModel):
     username: str
     password_hash: str
     is_admin: bool = True
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: str = Field(default_factory=now_iso)
 
 class AdminLogin(BaseModel):
     username: str
@@ -87,8 +92,8 @@ class User(BaseModel):
     location: Optional[str] = None
     is_verified: bool = False
     is_active: bool = True
-    joined_date: datetime = Field(default_factory=datetime.utcnow)
-    last_login: Optional[datetime] = None
+    joined_date: str = Field(default_factory=now_iso)
+    last_login: Optional[str] = None
     preferences: dict = Field(default_factory=dict)
 
 class Token(BaseModel):
@@ -126,8 +131,8 @@ class Content(BaseModel):
     crew: List[CrewMember] = []
     streaming_platforms: List[str] = []
     tags: List[str] = []
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: str = Field(default_factory=now_iso)
+    updated_at: str = Field(default_factory=now_iso)
 
 class ContentCreate(BaseModel):
     slug: Optional[str] = None
@@ -188,8 +193,22 @@ class WatchlistItem(BaseModel):
     status: str
     total_episodes: Optional[int] = None
     progress: Optional[int] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: str = Field(default_factory=now_iso)
+    updated_at: str = Field(default_factory=now_iso)
+
+class ImportJob(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    admin_username: str
+    source_type: str  # file | url
+    source: str      # filename or url
+    status: str      # queued | processing | completed | failed
+    total_rows: int = 0
+    processed_rows: int = 0
+    successful_imports: int = 0
+    failed_imports: int = 0
+    errors: List[str] = []
+    started_at: str = Field(default_factory=now_iso)
+    finished_at: Optional[str] = None
 
 # Helpers
 
@@ -227,6 +246,14 @@ async def unique_slug_for_title(title: str) -> str:
         i += 1
 
 
+aSYNC_OPTIONS = {"_id": 0}
+
+async def strip_id(doc: dict) -> dict:
+    if not doc:
+        return doc
+    doc.pop('_id', None)
+    return doc
+
 async def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(security)) -> AdminUser:
     try:
         payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
@@ -238,10 +265,11 @@ async def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(
             raise HTTPException(status_code=401, detail="Invalid token")
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
-    admin = await db.admins.find_one({"username": username})
+    admin = await db.admins.find_one({"username": {"$regex": f"^{re.escape(username)}$", "$options": "i"}})
     if not admin:
         raise HTTPException(status_code=401, detail="Admin not found")
-    return AdminUser(**{k: v for k, v in admin.items() if k != '_id'})
+    admin.pop('_id', None)
+    return AdminUser(**admin)
 
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
@@ -343,8 +371,8 @@ def validate_and_convert_row(row: pd.Series) -> Optional[dict]:
             'crew': crew,
             'streaming_platforms': streaming_platforms,
             'tags': [t.strip() for t in str(row.get('tags', '')).split(',') if t.strip()] if not pd.isna(row.get('tags')) else [],
-            'created_at': datetime.utcnow(),
-            'updated_at': datetime.utcnow(),
+            'created_at': now_iso(),
+            'updated_at': now_iso(),
         }
         return content
     except Exception as e:
@@ -382,7 +410,7 @@ class UserProfile(BaseModel):
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
     location: Optional[str] = None
-    joined_date: datetime
+    joined_date: str
     is_verified: bool = False
 
 @api_router.post('/auth/register')
@@ -399,7 +427,7 @@ async def register_user(user: UserCreate):
         last_name=user.last_name,
         is_verified=False,
         is_active=True,
-        joined_date=datetime.utcnow()
+        joined_date=now_iso()
     )
     await db.users.insert_one(new_user.dict())
     token = create_access_token({"sub": new_user.id, "type": "user"})
@@ -443,13 +471,12 @@ async def reset_password(req: ResetPasswordRequest):
     })
     if not user:
         raise HTTPException(status_code=404, detail='No matching user for given username and email')
-    await db.users.update_one({"id": user['id']}, {"$set": {"password_hash": hash_password(req.new_password), "updated_at": datetime.utcnow()}})
+    await db.users.update_one({"id": user['id']}, {"$set": {"password_hash": hash_password(req.new_password), "updated_at": now_iso()}})
     return {"success": True}
 
 # Admin auth
 @api_router.post('/admin/login', response_model=Token)
 async def admin_login(admin_data: AdminLogin):
-    # allow login by exact username (which may be the admin email)
     admin = await db.admins.find_one({"username": {"$regex": f"^{re.escape(admin_data.username)}$", "$options": "i"}})
     if not admin or not verify_password(admin_data.password, admin.get('password_hash', '')):
         raise HTTPException(status_code=401, detail="Incorrect username or password")
@@ -543,7 +570,7 @@ async def advanced_search(query: Optional[str] = None, country: Optional[str] = 
 async def content_featured(category: Optional[str] = 'trending', country: Optional[str] = None, limit: int = Query(10, ge=1, le=50)):
     if category == 'trending':
         three_months_ago = datetime.utcnow() - timedelta(days=90)
-        cursor = db.content.find({"created_at": {"$gte": three_months_ago}}).sort([("rating", -1), ("created_at", -1)]).limit(limit)
+        cursor = db.content.find({"created_at": {"$gte": three_months_ago.isoformat()}}).sort([("rating", -1), ("created_at", -1)]).limit(limit)
     elif category == 'new_releases':
         cursor = db.content.find().sort("created_at", -1).limit(limit)
     elif category == 'top_rated':
@@ -598,9 +625,200 @@ async def admin_list_content(page: int = Query(1, ge=1), limit: int = Query(20, 
         d.pop('_id', None)
     return {"contents": docs, "total": total}
 
-# ============== BULK IMPORT (from URL minimal) ==============
+# ============== BULK IMPORT (Preview, File, URL) ==============
 class ImportURL(BaseModel):
     csv_url: str
+
+@api_router.post('/admin/bulk-import/preview')
+async def preview_bulk_import(file: bytes = Depends(lambda: None)):
+    # Note: We'll implement using request body form/multipart via FastAPI's starlette under-the-hood.
+    # To keep compatibility, we implement a small workaround using the global request object is avoided here.
+    # Simpler approach: accept raw body not possible; Instead define a dedicated endpoint below using form dependency.
+    raise HTTPException(status_code=400, detail="Use multipart/form-data with 'file' field")
+
+from fastapi import UploadFile, File as FastFile
+
+@api_router.post('/admin/bulk-import/preview', tags=["admin"])
+async def preview_bulk_import_file(file: UploadFile = FastFile(...), current_admin: AdminUser = Depends(get_current_admin)):
+    content = await file.read()
+    df = parse_excel_csv_file(content, file.filename)
+    detected = list(df.columns)
+    total_rows = len(df)
+    will_import = 0
+    will_skip = 0
+    preview_rows = []
+    for idx, row in df.head(50).iterrows():
+        issues = []
+        valid = True
+        title = str(row.get('title') or '').strip()
+        if not title:
+            valid = False
+            issues.append('Missing title')
+        content_data = validate_and_convert_row(row) if valid else None
+        # duplicate check by title + optional year
+        duplicate = False
+        year = None
+        ctype = None
+        rating = None
+        genres = ''
+        episodes = None
+        if content_data:
+            year = content_data.get('year')
+            ctype = content_data.get('content_type')
+            rating = content_data.get('rating')
+            genres = ','.join(content_data.get('genres') or [])
+            episodes = content_data.get('episodes')
+            query = {"title": {"$regex": f"^{re.escape(content_data['title'])}$", "$options": "i"}}
+            if year is not None:
+                query.update({"year": year})
+            existing = await db.content.find_one(query)
+            if existing:
+                duplicate = True
+                issues.append('Duplicate')
+        if valid and not duplicate:
+            will_import += 1
+        else:
+            will_skip += 1
+        preview_rows.append({
+            'row': idx + 2,
+            'title': title or 'N.A',
+            'year': year,
+            'country': str(row.get('country') or 'N.A'),
+            'content_type': ctype or (str(row.get('content_type') or 'drama')),
+            'rating': rating if isinstance(rating, (int, float)) else (row.get('rating') or 0.0),
+            'genres': genres,
+            'episodes': episodes,
+            'valid': valid and not duplicate,
+            'issues': issues,
+        })
+    return {
+        'total_rows': total_rows,
+        'will_import': will_import,
+        'will_skip': will_skip,
+        'detected_columns': detected,
+        'preview': preview_rows,
+    }
+
+@api_router.post('/admin/bulk-import/preview-url', tags=["admin"])
+async def preview_bulk_import_url(body: ImportURL, current_admin: AdminUser = Depends(get_current_admin)):
+    req = urllib.request.Request(body.csv_url, headers={'User-Agent': 'GDVG Importer'})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        if resp.status != 200:
+            raise HTTPException(status_code=400, detail=f"Failed to fetch CSV: HTTP {resp.status}")
+        data = resp.read()
+    df = pd.read_csv(io.BytesIO(data))
+    detected = list(df.columns)
+    total_rows = len(df)
+    will_import = 0
+    will_skip = 0
+    preview_rows = []
+    for idx, row in df.head(50).iterrows():
+        issues = []
+        valid = True
+        title = str(row.get('title') or '').strip()
+        if not title:
+            valid = False
+            issues.append('Missing title')
+        content_data = validate_and_convert_row(row) if valid else None
+        duplicate = False
+        year = None
+        ctype = None
+        rating = None
+        genres = ''
+        episodes = None
+        if content_data:
+            year = content_data.get('year')
+            ctype = content_data.get('content_type')
+            rating = content_data.get('rating')
+            genres = ','.join(content_data.get('genres') or [])
+            episodes = content_data.get('episodes')
+            query = {"title": {"$regex": f"^{re.escape(content_data['title'])}$", "$options": "i"}}
+            if year is not None:
+                query.update({"year": year})
+            existing = await db.content.find_one(query)
+            if existing:
+                duplicate = True
+                issues.append('Duplicate')
+        if valid and not duplicate:
+            will_import += 1
+        else:
+            will_skip += 1
+        preview_rows.append({
+            'row': idx + 2,
+            'title': title or 'N.A',
+            'year': year,
+            'country': str(row.get('country') or 'N.A'),
+            'content_type': ctype or (str(row.get('content_type') or 'drama')),
+            'rating': rating if isinstance(rating, (int, float)) else (row.get('rating') or 0.0),
+            'genres': genres,
+            'episodes': episodes,
+            'valid': valid and not duplicate,
+            'issues': issues,
+        })
+    return {
+        'total_rows': total_rows,
+        'will_import': will_import,
+        'will_skip': will_skip,
+        'detected_columns': detected,
+        'preview': preview_rows,
+    }
+
+@api_router.post('/admin/bulk-import', response_model=BulkImportResult)
+async def admin_bulk_import_file(file: UploadFile = FastFile(...), current_admin: AdminUser = Depends(get_current_admin)):
+    content = await file.read()
+    df = parse_excel_csv_file(content, file.filename)
+    job = ImportJob(
+        admin_username=current_admin.username,
+        source_type='file',
+        source=file.filename,
+        status='processing',
+        total_rows=len(df),
+        processed_rows=0,
+    )
+    await db.import_jobs.insert_one(job.dict())
+
+    successful = 0
+    failed = 0
+    errors: List[str] = []
+    imported: List[str] = []
+
+    for idx, row in df.iterrows():
+        try:
+            content_data = validate_and_convert_row(row)
+            if content_data is None:
+                failed += 1
+                errors.append(f"Row {idx + 2}: Missing title or invalid data")
+            else:
+                content_data['slug'] = await unique_slug_for_title(content_data['title'])
+                title = content_data['title']
+                year = content_data.get('year')
+                query = {"title": {"$regex": f"^{re.escape(title)}$", "$options": "i"}}
+                if year is not None:
+                    query.update({"year": year})
+                existing = await db.content.find_one(query)
+                if existing:
+                    failed += 1
+                    errors.append(f"Row {idx + 2}: Content '{title}' already exists")
+                else:
+                    await db.content.insert_one(content_data)
+                    successful += 1
+                    imported.append(title)
+        except Exception as e:
+            failed += 1
+            errors.append(f"Row {idx + 2}: {str(e)}")
+        finally:
+            job.processed_rows += 1
+            job.successful_imports = successful
+            job.failed_imports = failed
+            # Periodic partial updates (every 25 rows)
+            if job.processed_rows % 25 == 0:
+                await db.import_jobs.update_one({"id": job.id}, {"$set": job.dict()})
+
+    job.status = 'completed'
+    job.finished_at = now_iso()
+    await db.import_jobs.update_one({"id": job.id}, {"$set": job.dict()})
+
+    return BulkImportResult(success=successful > 0, total_rows=len(df), successful_imports=successful, failed_imports=failed, errors=errors[:200], imported_content=imported[:200])
 
 @api_router.post('/admin/bulk-import/from-url', response_model=BulkImportResult)
 async def admin_bulk_import_from_url(body: ImportURL, current_admin: AdminUser = Depends(get_current_admin)):
@@ -613,6 +831,16 @@ async def admin_bulk_import_from_url(body: ImportURL, current_admin: AdminUser =
         df = pd.read_csv(io.BytesIO(data))
         if df.empty:
             raise HTTPException(status_code=400, detail="CSV appears empty")
+        job = ImportJob(
+            admin_username=current_admin.username,
+            source_type='url',
+            source=body.csv_url,
+            status='processing',
+            total_rows=len(df),
+            processed_rows=0,
+        )
+        await db.import_jobs.insert_one(job.dict())
+
         successful = 0
         failed = 0
         errors: List[str] = []
@@ -624,9 +852,7 @@ async def admin_bulk_import_from_url(body: ImportURL, current_admin: AdminUser =
                     failed += 1
                     errors.append(f"Row {idx + 2}: Missing title or invalid data")
                     continue
-                # generate slug (normalized title)
                 content_data['slug'] = await unique_slug_for_title(content_data['title'])
-                # dedup by normalized title + optional year to honor "skip duplicates"
                 title = content_data['title']
                 year = content_data.get('year')
                 query = {"title": {"$regex": f"^{re.escape(title)}$", "$options": "i"}}
@@ -643,10 +869,37 @@ async def admin_bulk_import_from_url(body: ImportURL, current_admin: AdminUser =
             except Exception as e:
                 failed += 1
                 errors.append(f"Row {idx + 2}: {str(e)}")
+            finally:
+                job.processed_rows += 1
+                job.successful_imports = successful
+                job.failed_imports = failed
+                if job.processed_rows % 25 == 0:
+                    await db.import_jobs.update_one({"id": job.id}, {"$set": job.dict()})
+        job.status = 'completed'
+        job.finished_at = now_iso()
+        await db.import_jobs.update_one({"id": job.id}, {"$set": job.dict()})
         return BulkImportResult(success=successful > 0, total_rows=len(df), successful_imports=successful, failed_imports=failed, errors=errors[:50], imported_content=imported[:50])
     except Exception as e:
         logger.exception('Import from URL error')
         raise HTTPException(status_code=400, detail=f"Import from URL failed: {str(e)}")
+
+@api_router.get('/admin/bulk-import/jobs')
+async def list_import_jobs(page: int = Query(1, ge=1), limit: int = Query(10, ge=1, le=100), current_admin: AdminUser = Depends(get_current_admin)):
+    skip = (page - 1) * limit
+    q = {}
+    total = await db.import_jobs.count_documents(q)
+    docs = await db.import_jobs.find(q).sort("started_at", -1).skip(skip).limit(limit).to_list(length=limit)
+    for d in docs:
+        d.pop('_id', None)
+    return {"jobs": docs, "total": total, "page": page, "limit": limit}
+
+@api_router.get('/admin/bulk-import/jobs/{job_id}')
+async def get_import_job(job_id: str, current_admin: AdminUser = Depends(get_current_admin)):
+    job = await db.import_jobs.find_one({"id": job_id})
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    job.pop('_id', None)
+    return job
 
 # ============== WATCHLIST ROUTES ==============
 @api_router.get('/watchlist')
@@ -677,7 +930,7 @@ class WatchlistUpdate(BaseModel):
 @api_router.put('/watchlist/{item_id}')
 async def update_watchlist(item_id: str, body: WatchlistUpdate, current_user: User = Depends(get_current_user)):
     update = {k: v for k, v in body.dict().items() if v is not None}
-    update['updated_at'] = datetime.utcnow()
+    update['updated_at'] = now_iso()
     res = await db.watchlist.update_one({"id": item_id, "user_id": current_user.id}, {"$set": update})
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Watchlist item not found")
@@ -706,14 +959,14 @@ async def on_startup():
         await db.admins.update_one(
             {"username": "admin"},
             {"$set": {"password_hash": hash_password('admin123'), "is_admin": True},
-             "$setOnInsert": {"id": str(uuid.uuid4()), "created_at": datetime.utcnow(), "username": "admin"}},
+             "$setOnInsert": {"id": str(uuid.uuid4()), "created_at": now_iso(), "username": "admin"}},
             upsert=True
         )
         # Ensure requested email-based admin (username stores the email)
         await db.admins.update_one(
             {"username": "globaldramaverseguide45@gmail.com"},
             {"$set": {"password_hash": hash_password('krushna45'), "is_admin": True},
-             "$setOnInsert": {"id": str(uuid.uuid4()), "created_at": datetime.utcnow(), "username": "globaldramaverseguide45@gmail.com"}},
+             "$setOnInsert": {"id": str(uuid.uuid4()), "created_at": now_iso(), "username": "globaldramaverseguide45@gmail.com"}},
             upsert=True
         )
         logger.info("Admins ensured: admin/admin123 and globaldramaverseguide45@gmail.com/krushna45")
