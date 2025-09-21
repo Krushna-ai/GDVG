@@ -6,8 +6,10 @@ import QuickRating from './QuickRating';
 import ReviewSystem from './ReviewSystem';
 import Footer from './Footer';
 
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
 const ContentDetail = ({ darkTheme, currentUser }) => {
-  const { id, title } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,44 +18,48 @@ const ContentDetail = ({ darkTheme, currentUser }) => {
 
   useEffect(() => {
     fetchContentDetail();
-    fetchRelatedContent();
   }, [id]);
+
+  useEffect(() => {
+    if (content) fetchRelatedContent(content);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content?.id]);
 
   const fetchContentDetail = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/content/${id}`);
+      const response = await axios.get(`${API}/content/${id}`);
       setContent(response.data);
     } catch (error) {
       console.error('Error fetching content:', error);
+      setContent(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchRelatedContent = async () => {
+  const fetchRelatedContent = async (base) => {
     try {
-      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/content`);
-      // Filter related content (same genre/country, exclude current)
-      const related = response.data.filter(item => 
-        item._id !== id && (
-          item.genre === content?.genre || 
-          item.country === content?.country
-        )
-      ).slice(0, 6);
-      setRelatedContent(related);
+      // Prefer same country; fallback to top rated
+      const params = new URLSearchParams();
+      if (base?.country) params.append('country', base.country);
+      params.append('limit', '12');
+      const response = await axios.get(`${API}/content/search?${params.toString()}`);
+      const list = response.data?.contents || [];
+      const filtered = list.filter((item) => item.id !== base.id).slice(0, 6);
+      setRelatedContent(filtered);
     } catch (error) {
       console.error('Error fetching related content:', error);
     }
   };
 
   const formatTitleForUrl = (title) => {
-    return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '');
+    return (title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '') || 'untitled';
   };
 
-  const handleRelatedContentClick = (relatedContent) => {
-    const titleSlug = formatTitleForUrl(relatedContent.title);
-    navigate(`/content/${relatedContent._id}/${titleSlug}`);
+  const handleRelatedContentClick = (item) => {
+    const titleSlug = formatTitleForUrl(item.slug || item.title);
+    navigate(`/content/${item.id}/${titleSlug}`);
   };
 
   if (loading) {
@@ -102,26 +108,25 @@ const ContentDetail = ({ darkTheme, currentUser }) => {
               <div className="sticky top-8">
                 <div className="relative">
                   <img
-                    src={content.image || '/api/placeholder/300/450'}
+                    src={content.poster_url || '/api/placeholder/300/450'}
                     alt={content.title}
                     className="w-full rounded-lg shadow-lg"
                     onError={(e) => {
-                      e.target.src = '/api/placeholder/300/450';
+                      e.currentTarget.src = '/api/placeholder/300/450';
                     }}
                   />
                   <div className="mt-4 space-y-3">
                     <WatchlistButton
                       content={content}
                       darkTheme={darkTheme}
-                      currentUser={currentUser}
-                      className="w-full"
                     />
-                    <QuickRating
-                      content={content}
-                      darkTheme={darkTheme}
-                      currentUser={currentUser}
-                      className="w-full"
-                    />
+                    {QuickRating && (
+                      <QuickRating
+                        content={content}
+                        darkTheme={darkTheme}
+                        currentUser={currentUser}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -135,22 +140,22 @@ const ContentDetail = ({ darkTheme, currentUser }) => {
                   <h1 className={`text-4xl font-bold ${darkTheme ? 'text-white' : 'text-gray-900'}`}>
                     {content.title}
                   </h1>
-                  {content.originalTitle && (
+                  {content.original_title && (
                     <h2 className={`text-xl mt-2 ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {content.originalTitle}
+                      {content.original_title}
                     </h2>
                   )}
                   <div className="flex items-center gap-4 mt-4">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                       darkTheme ? 'bg-gray-800 text-gray-300' : 'bg-gray-200 text-gray-700'
                     }`}>
-                      {content.type}
+                      {content.content_type}
                     </span>
                     <span className={`text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {content.year}
+                      {content.year ?? 'N.A'}
                     </span>
                     <span className={`text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {content.country}
+                      {content.country || 'N.A'}
                     </span>
                   </div>
                 </div>
@@ -160,7 +165,7 @@ const ContentDetail = ({ darkTheme, currentUser }) => {
                   <div className="flex items-center gap-6">
                     <div className="text-center">
                       <div className="text-3xl font-bold text-red-600">
-                        {content.rating || 'N/A'}
+                        {(content.rating ?? 0).toFixed(1)}
                       </div>
                       <div className={`text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
                         Rating
@@ -168,7 +173,7 @@ const ContentDetail = ({ darkTheme, currentUser }) => {
                     </div>
                     <div className="text-center">
                       <div className={`text-2xl font-bold ${darkTheme ? 'text-white' : 'text-gray-900'}`}>
-                        {content.episodes || 'N/A'}
+                        {content.episodes ?? 'N.A'}
                       </div>
                       <div className={`text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
                         Episodes
@@ -176,10 +181,10 @@ const ContentDetail = ({ darkTheme, currentUser }) => {
                     </div>
                     <div className="text-center">
                       <div className={`text-2xl font-bold ${darkTheme ? 'text-white' : 'text-gray-900'}`}>
-                        {content.status || 'N/A'}
+                        {content.duration ? `${content.duration} min` : 'N.A'}
                       </div>
                       <div className={`text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
-                        Status
+                        Duration
                       </div>
                     </div>
                   </div>
@@ -238,10 +243,10 @@ const ContentDetail = ({ darkTheme, currentUser }) => {
                 <div className="space-y-4">
                   <div>
                     <span className={`font-semibold ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Genre:
+                      Genres:
                     </span>
                     <span className={`ml-2 ${darkTheme ? 'text-white' : 'text-gray-900'}`}>
-                      {content.genre || 'N/A'}
+                      {(content.genres || []).join(', ') || 'N.A'}
                     </span>
                   </div>
                   <div>
@@ -249,7 +254,7 @@ const ContentDetail = ({ darkTheme, currentUser }) => {
                       Country:
                     </span>
                     <span className={`ml-2 ${darkTheme ? 'text-white' : 'text-gray-900'}`}>
-                      {content.country || 'N/A'}
+                      {content.country || 'N.A'}
                     </span>
                   </div>
                   <div>
@@ -257,7 +262,7 @@ const ContentDetail = ({ darkTheme, currentUser }) => {
                       Year:
                     </span>
                     <span className={`ml-2 ${darkTheme ? 'text-white' : 'text-gray-900'}`}>
-                      {content.year || 'N/A'}
+                      {content.year ?? 'N.A'}
                     </span>
                   </div>
                 </div>
@@ -267,7 +272,7 @@ const ContentDetail = ({ darkTheme, currentUser }) => {
                       Type:
                     </span>
                     <span className={`ml-2 ${darkTheme ? 'text-white' : 'text-gray-900'}`}>
-                      {content.type || 'N/A'}
+                      {content.content_type}
                     </span>
                   </div>
                   <div>
@@ -275,15 +280,15 @@ const ContentDetail = ({ darkTheme, currentUser }) => {
                       Episodes:
                     </span>
                     <span className={`ml-2 ${darkTheme ? 'text-white' : 'text-gray-900'}`}>
-                      {content.episodes || 'N/A'}
+                      {content.episodes ?? 'N.A'}
                     </span>
                   </div>
                   <div>
                     <span className={`font-semibold ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Status:
+                      Platforms:
                     </span>
                     <span className={`ml-2 ${darkTheme ? 'text-white' : 'text-gray-900'}`}>
-                      {content.status || 'N/A'}
+                      {(content.streaming_platforms || []).join(', ') || 'N.A'}
                     </span>
                   </div>
                 </div>
@@ -299,18 +304,18 @@ const ContentDetail = ({ darkTheme, currentUser }) => {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                   {relatedContent.map((item) => (
                     <div
-                      key={item._id}
+                      key={item.id}
                       onClick={() => handleRelatedContentClick(item)}
                       className={`cursor-pointer rounded-lg overflow-hidden transition-transform hover:scale-105 ${
                         darkTheme ? 'bg-gray-800' : 'bg-white'
                       } shadow-lg`}
                     >
                       <img
-                        src={item.image || '/api/placeholder/150/225'}
+                        src={item.poster_url || '/api/placeholder/150/225'}
                         alt={item.title}
                         className="w-full h-40 object-cover"
                         onError={(e) => {
-                          e.target.src = '/api/placeholder/150/225';
+                          e.currentTarget.src = '/api/placeholder/150/225';
                         }}
                       />
                       <div className="p-3">
@@ -320,7 +325,7 @@ const ContentDetail = ({ darkTheme, currentUser }) => {
                           {item.title}
                         </h4>
                         <p className={`text-xs mt-1 ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {item.year} • {item.country}
+                          {(item.year ?? 'N.A')} • {(item.country || 'N.A')}
                         </p>
                       </div>
                     </div>
@@ -344,11 +349,13 @@ const ContentDetail = ({ darkTheme, currentUser }) => {
 
         {activeTab === 'reviews' && (
           <div>
-            <ReviewSystem 
-              content={content}
-              darkTheme={darkTheme}
-              currentUser={currentUser}
-            />
+            {ReviewSystem && (
+              <ReviewSystem 
+                content={content}
+                darkTheme={darkTheme}
+                currentUser={currentUser}
+              />
+            )}
           </div>
         )}
 

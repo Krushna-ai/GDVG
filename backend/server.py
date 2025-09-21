@@ -449,10 +449,11 @@ async def reset_password(req: ResetPasswordRequest):
 # Admin auth
 @api_router.post('/admin/login', response_model=Token)
 async def admin_login(admin_data: AdminLogin):
-    admin = await db.admins.find_one({"username": admin_data.username})
+    # allow login by exact username (which may be the admin email)
+    admin = await db.admins.find_one({"username": {"$regex": f"^{re.escape(admin_data.username)}$", "$options": "i"}})
     if not admin or not verify_password(admin_data.password, admin.get('password_hash', '')):
         raise HTTPException(status_code=401, detail="Incorrect username or password")
-    token = create_access_token({"sub": admin_data.username, "type": "admin"})
+    token = create_access_token({"sub": admin['username'], "type": "admin"})
     return {"access_token": token, "token_type": "bearer"}
 
 # ============== PUBLIC CONTENT ROUTES ==============
@@ -623,14 +624,14 @@ async def admin_bulk_import_from_url(body: ImportURL, current_admin: AdminUser =
                     failed += 1
                     errors.append(f"Row {idx + 2}: Missing title or invalid data")
                     continue
+                # generate slug (normalized title)
                 content_data['slug'] = await unique_slug_for_title(content_data['title'])
-                # dedup by title (+ year + type when available)
+                # dedup by normalized title + optional year to honor "skip duplicates"
                 title = content_data['title']
                 year = content_data.get('year')
-                ctype = content_data.get('content_type')
                 query = {"title": {"$regex": f"^{re.escape(title)}$", "$options": "i"}}
-                if year is not None and ctype:
-                    query.update({"year": year, "content_type": ctype})
+                if year is not None:
+                    query.update({"year": year})
                 existing = await db.content.find_one(query)
                 if existing:
                     failed += 1
@@ -701,12 +702,20 @@ app.add_middleware(
 @app.on_event('startup')
 async def on_startup():
     try:
+        # Ensure default admin
         await db.admins.update_one(
             {"username": "admin"},
             {"$set": {"password_hash": hash_password('admin123'), "is_admin": True},
              "$setOnInsert": {"id": str(uuid.uuid4()), "created_at": datetime.utcnow(), "username": "admin"}},
             upsert=True
         )
-        logger.info("Default admin ensured/reset (admin/admin123)")
+        # Ensure requested email-based admin (username stores the email)
+        await db.admins.update_one(
+            {"username": "globaldramaverseguide45@gmail.com"},
+            {"$set": {"password_hash": hash_password('krushna45'), "is_admin": True},
+             "$setOnInsert": {"id": str(uuid.uuid4()), "created_at": datetime.utcnow(), "username": "globaldramaverseguide45@gmail.com"}},
+            upsert=True
+        )
+        logger.info("Admins ensured: admin/admin123 and globaldramaverseguide45@gmail.com/krushna45")
     except Exception as e:
-        logger.error(f"Failed to ensure default admin: {e}")
+        logger.error(f"Failed to ensure admins: {e}")
