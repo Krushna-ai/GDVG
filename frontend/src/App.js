@@ -105,21 +105,33 @@ function App() {
     return (
       <div className={`min-h-screen ${darkTheme ? 'bg-black' : 'bg-gray-50'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className={`text-3xl font-bold ${darkTheme ? 'text-white' : 'text-gray-900'}`}>Discover</h1>
-            <div className="flex gap-2">
-              {!isAuthenticated ? (
-                <>
-                  <button onClick={() => openUserAuth(true)} className="px-4 py-2 rounded-lg bg-red-600 text-white">Sign In</button>
-                  <button onClick={() => openUserAuth(false)} className={`px-4 py-2 rounded-lg ${darkTheme ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-900'}`}>Sign Up</button>
-                </>
-              ) : (
-                <button onClick={handleLogout} className={`px-4 py-2 rounded-lg ${darkTheme ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-900'}`}>Logout</button>
-              )}
-            </div>
+          {/* Netflix-style top nav */}
+          <div className="sticky top-0 z-40">
+            <nav className={`flex items-center justify-between px-2 py-3 ${darkTheme ? 'bg-black/70 backdrop-blur' : 'bg-white/80 backdrop-blur border-b border-gray-200'}`}>
+              <div className="flex items-center gap-6">
+                <button onClick={() => window.location.assign('/')} className="focus:outline-none">
+                  <span className="text-3xl font-extrabold tracking-wide text-red-600">GDVG</span>
+                </button>
+                <ul className={`hidden md:flex items-center gap-4 ${darkTheme ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <li><button onClick={() => window.location.assign('/')} className="hover:text-white">Home</button></li>
+                  <li><button onClick={() => document.getElementById('discover-anchor')?.scrollIntoView({behavior:'smooth'})} className="hover:text-white">Discover</button></li>
+                  <li><button onClick={() => window.location.assign('/admin')} className="hover:text-white">Admin</button></li>
+                </ul>
+              </div>
+              <div className="flex items-center gap-2">
+                {!isAuthenticated ? (
+                  <>
+                    <button onClick={() => openUserAuth(true)} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">Sign In</button>
+                    <button onClick={() => openUserAuth(false)} className={`px-4 py-2 rounded ${darkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'}`}>Sign Up</button>
+                  </>
+                ) : (
+                  <button onClick={handleLogout} className={`px-4 py-2 rounded ${darkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'}`}>Logout</button>
+                )}
+              </div>
+            </nav>
           </div>
 
-
+          {/* Hero + Featured */}
           <FeaturedSections darkTheme={darkTheme} handleContentClick={handleContentClick} />
 
           <div className="mt-12">
