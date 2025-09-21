@@ -3585,6 +3585,33 @@ if __name__ == "__main__":
         else:
             print("\n⚠️  Some Priority A tests failed. Check the details above.")
             sys.exit(1)
+    elif len(sys.argv) > 1 and sys.argv[1] == "--review-request":
+        # Run the specific review request tests
+        tester.test_review_request_bulk_import_endpoints()
+        
+        # Print summary
+        print("\n" + "=" * 80)
+        print("📊 REVIEW REQUEST TEST SUMMARY")
+        print("=" * 80)
+        
+        passed = sum(1 for result in tester.test_results if result["success"])
+        failed = len(tester.test_results) - passed
+        success_rate = (passed / len(tester.test_results)) * 100 if tester.test_results else 0
+        
+        print(f"Total Tests: {len(tester.test_results)}")
+        print(f"Passed: {passed}")
+        print(f"Failed: {failed}")
+        print(f"Success Rate: {success_rate:.1f}%")
+        
+        if failed > 0:
+            print(f"\n❌ FAILED TESTS:")
+            for result in tester.test_results:
+                if not result["success"]:
+                    print(f"  - {result['test']}: {result['message']}")
+            sys.exit(1)
+        else:
+            print(f"\n✅ ALL TESTS PASSED!")
+            sys.exit(0)
     else:
         # Run focused admin tests as requested
         success = tester.run_focused_admin_tests()
