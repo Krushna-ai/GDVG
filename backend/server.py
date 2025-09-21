@@ -185,7 +185,7 @@ class WatchlistItem(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     content_id: str
-    status: str  # want_to_watch, watching, completed, dropped
+    status: str
     total_episodes: Optional[int] = None
     progress: Optional[int] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -259,7 +259,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     doc.pop('_id', None)
     return User(**doc)
 
-# Parsing helpers remain
+# Parsing helpers
 
 def parse_excel_csv_file(file_content: bytes, filename: str) -> pd.DataFrame:
     try:
@@ -351,8 +351,301 @@ def validate_and_convert_row(row: pd.Series) -> Optional[dict]:
         logger.error(f"Error validating row: {str(e)}")
         return None
 
-# ============== AUTH ROUTES (unchanged) ==============
-# ... existing auth and content routes are below ...
+# ============== HEALTH ==============
+@api_router.get('/health')
+async def health():
+    return {"status": "ok"}
+
+# ============== AUTH ==============
+class UserCreate(BaseModel):
+    email: str
+    username: str
+    password: str
+    first_name: str
+    last_name: str
+
+class UserLogin(BaseModel):
+    login: str
+    password: str
+
+class ResetPasswordRequest(BaseModel):
+    username: str
+    email: str
+    new_password: str
+
+class UserProfile(BaseModel):
+    id: str
+    email: str
+    username: str
+    first_name: str
+    last_name: str
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[str] = None
+    joined_date: datetime
+    is_verified: bool = False
+
+@api_router.post('/auth/register')
+async def register_user(user: UserCreate):
+    if await db.users.find_one({"email": {"$regex": f"^{user.email}$", "$options": "i"}}):
+        raise HTTPException(status_code=400, detail='Email already registered')
+    if await db.users.find_one({"username": {"$regex": f"^{user.username}$", "$options": "i"}}):
+        raise HTTPException(status_code=400, detail='Username already taken')
+    new_user = User(
+        email=user.email,
+        username=user.username,
+        password_hash=hash_password(user.password),
+        first_name=user.first_name,
+        last_name=user.last_name,
+        is_verified=False,
+        is_active=True,
+        joined_date=datetime.utcnow()
+    )
+    await db.users.insert_one(new_user.dict())
+    token = create_access_token({"sub": new_user.id, "type": "user"})
+    return {"access_token": token, "token_type": "bearer"}
+
+@api_router.post('/auth/login')
+async def login_user(body: UserLogin):
+    identifier = body.login.strip()
+    q = {"$or": [
+        {"email": {"$regex": f"^{identifier}$", "$options": "i"}},
+        {"username": {"$regex": f"^{identifier}$", "$options": "i"}}
+    ]}
+    user = await db.users.find_one(q)
+    if not user or not verify_password(body.password, user.get('password_hash', '')):
+        raise HTTPException(status_code=401, detail='Invalid credentials')
+    token = create_access_token({"sub": user['id'], "type": "user"})
+    return {"access_token": token, "token_type": "bearer"}
+
+@api_router.get('/auth/me', response_model=UserProfile)
+async def auth_me(current_user: User = Depends(get_current_user)):
+    return UserProfile(
+        id=current_user.id,
+        email=current_user.email,
+        username=current_user.username,
+        first_name=current_user.first_name,
+        last_name=current_user.last_name,
+        avatar_url=current_user.avatar_url,
+        bio=current_user.bio,
+        location=current_user.location,
+        joined_date=current_user.joined_date,
+        is_verified=current_user.is_verified
+    )
+
+@api_router.post('/auth/reset-password')
+async def reset_password(req: ResetPasswordRequest):
+    user = await db.users.find_one({
+        "$and": [
+            {"username": {"$regex": f"^{req.username}$", "$options": "i"}},
+            {"email": {"$regex": f"^{req.email}$", "$options": "i"}}
+        ]
+    })
+    if not user:
+        raise HTTPException(status_code=404, detail='No matching user for given username and email')
+    await db.users.update_one({"id": user['id']}, {"$set": {"password_hash": hash_password(req.new_password), "updated_at": datetime.utcnow()}})
+    return {"success": True}
+
+# Admin auth
+@api_router.post('/admin/login', response_model=Token)
+async def admin_login(admin_data: AdminLogin):
+    admin = await db.admins.find_one({"username": admin_data.username})
+    if not admin or not verify_password(admin_data.password, admin.get('password_hash', '')):
+        raise HTTPException(status_code=401, detail="Incorrect username or password")
+    token = create_access_token({"sub": admin_data.username, "type": "admin"})
+    return {"access_token": token, "token_type": "bearer"}
+
+# ============== PUBLIC CONTENT ROUTES ==============
+@api_router.get('/content', response_model=ContentResponse)
+async def get_content(page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100), search: Optional[str] = None,
+                     country: Optional[str] = None, content_type: Optional[ContentType] = None,
+                     genre: Optional[ContentGenre] = None, year: Optional[int] = None):
+    skip = (page - 1) * limit
+    q: dict = {}
+    if search:
+        q["$or"] = [
+            {"title": {"$regex": search, "$options": "i"}},
+            {"original_title": {"$regex": search, "$options": "i"}},
+            {"synopsis": {"$regex": search, "$options": "i"}},
+            {"tags": {"$regex": search, "$options": "i"}},
+        ]
+    if country:
+        q["country"] = {"$regex": country, "$options": "i"}
+    if content_type:
+        q["content_type"] = content_type
+    if genre:
+        q["genres"] = genre
+    if year is not None:
+        q["year"] = year
+
+    total = await db.content.count_documents(q)
+    cursor = db.content.find(q).skip(skip).limit(limit).sort("created_at", -1)
+    docs = await cursor.to_list(length=limit)
+    items: List[Content] = []
+    for d in docs:
+        d.pop('_id', None)
+        items.append(Content(**d))
+    return ContentResponse(contents=items, total=total, page=page, limit=limit)
+
+@api_router.get('/content/search', response_model=ContentResponse)
+async def advanced_search(query: Optional[str] = None, country: Optional[str] = None,
+                          content_type: Optional[ContentType] = None, genre: Optional[ContentGenre] = None,
+                          year_from: Optional[int] = None, year_to: Optional[int] = None,
+                          rating_min: Optional[float] = None, rating_max: Optional[float] = None,
+                          sort_by: Optional[str] = 'created_at', sort_order: Optional[str] = 'desc',
+                          page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100)):
+    skip = (page - 1) * limit
+    q: dict = {}
+    if query:
+        q["$or"] = [
+            {"title": {"$regex": query, "$options": "i"}},
+            {"original_title": {"$regex": query, "$options": "i"}},
+            {"synopsis": {"$regex": query, "$options": "i"}},
+            {"tags": {"$regex": query, "$options": "i"}},
+            {"cast.name": {"$regex": query, "$options": "i"}},
+            {"crew.name": {"$regex": query, "$options": "i"}},
+        ]
+    if country:
+        q["country"] = {"$regex": country, "$options": "i"}
+    if content_type:
+        q["content_type"] = content_type
+    if genre:
+        q["genres"] = genre
+    if year_from is not None or year_to is not None:
+        yr = {}
+        if year_from is not None:
+            yr["$gte"] = year_from
+        if year_to is not None:
+            yr["$lte"] = year_to
+        q["year"] = yr
+    if rating_min is not None or rating_max is not None:
+        rf = {}
+        if rating_min is not None:
+            rf["$gte"] = rating_min
+        if rating_max is not None:
+            rf["$lte"] = rating_max
+        q["rating"] = rf
+
+    sort_dir = 1 if sort_order == 'asc' else -1
+    sort_criteria = [(sort_by, sort_dir)]
+
+    total = await db.content.count_documents(q)
+    cursor = db.content.find(q).sort(sort_criteria).skip(skip).limit(limit)
+    docs = await cursor.to_list(length=limit)
+    items: List[Content] = []
+    for d in docs:
+        d.pop('_id', None)
+        items.append(Content(**d))
+    return ContentResponse(contents=items, total=total, page=page, limit=limit)
+
+@api_router.get('/content/featured')
+async def content_featured(category: Optional[str] = 'trending', country: Optional[str] = None, limit: int = Query(10, ge=1, le=50)):
+    if category == 'trending':
+        three_months_ago = datetime.utcnow() - timedelta(days=90)
+        cursor = db.content.find({"created_at": {"$gte": three_months_ago}}).sort([("rating", -1), ("created_at", -1)]).limit(limit)
+    elif category == 'new_releases':
+        cursor = db.content.find().sort("created_at", -1).limit(limit)
+    elif category == 'top_rated':
+        cursor = db.content.find().sort("rating", -1).limit(limit)
+    elif category == 'by_country' and country:
+        cursor = db.content.find({"country": {"$regex": country, "$options": "i"}}).sort([("rating", -1), ("created_at", -1)]).limit(limit)
+    else:
+        cursor = db.content.find().sort([("rating", -1), ("created_at", -1)]).limit(limit)
+    docs = await cursor.to_list(length=limit)
+    items = []
+    for d in docs:
+        d.pop('_id', None)
+        items.append(Content(**d))
+    return items
+
+@api_router.get('/content/{content_id}', response_model=Content)
+async def get_content_by_id(content_id: str):
+    doc = await db.content.find_one({"id": content_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Content not found")
+    doc.pop('_id', None)
+    return Content(**doc)
+
+@api_router.get('/countries')
+async def get_countries():
+    countries = await db.content.distinct('country')
+    countries = [c for c in countries if c]
+    return {"countries": sorted(countries)}
+
+@api_router.get('/genres')
+async def get_genres():
+    return {"genres": [g.value for g in ContentGenre]}
+
+@api_router.get('/content-types')
+async def get_content_types():
+    return {"content_types": [ct.value for ct in ContentType]}
+
+# ============== ADMIN CONTENT MGMT (minimal) ==============
+@api_router.get('/admin/content')
+async def admin_list_content(page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=100), search: Optional[str] = None,
+                             current_admin: AdminUser = Depends(get_current_admin)):
+    skip = (page - 1) * limit
+    q: dict = {}
+    if search:
+        q["$or"] = [
+            {"title": {"$regex": search, "$options": "i"}},
+            {"original_title": {"$regex": search, "$options": "i"}},
+        ]
+    total = await db.content.count_documents(q)
+    docs = await db.content.find(q).skip(skip).limit(limit).sort("updated_at", -1).to_list(length=limit)
+    for d in docs:
+        d.pop('_id', None)
+    return {"contents": docs, "total": total}
+
+# ============== BULK IMPORT (from URL minimal) ==============
+class ImportURL(BaseModel):
+    csv_url: str
+
+@api_router.post('/admin/bulk-import/from-url', response_model=BulkImportResult)
+async def admin_bulk_import_from_url(body: ImportURL, current_admin: AdminUser = Depends(get_current_admin)):
+    try:
+        req = urllib.request.Request(body.csv_url, headers={'User-Agent': 'GDVG Importer'})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            if resp.status != 200:
+                raise HTTPException(status_code=400, detail=f"Failed to fetch CSV: HTTP {resp.status}")
+            data = resp.read()
+        df = pd.read_csv(io.BytesIO(data))
+        if df.empty:
+            raise HTTPException(status_code=400, detail="CSV appears empty")
+        successful = 0
+        failed = 0
+        errors: List[str] = []
+        imported: List[str] = []
+        for idx, row in df.iterrows():
+            try:
+                content_data = validate_and_convert_row(row)
+                if content_data is None:
+                    failed += 1
+                    errors.append(f"Row {idx + 2}: Missing title or invalid data")
+                    continue
+                content_data['slug'] = await unique_slug_for_title(content_data['title'])
+                # dedup by title (+ year + type when available)
+                title = content_data['title']
+                year = content_data.get('year')
+                ctype = content_data.get('content_type')
+                query = {"title": {"$regex": f"^{re.escape(title)}$", "$options": "i"}}
+                if year is not None and ctype:
+                    query.update({"year": year, "content_type": ctype})
+                existing = await db.content.find_one(query)
+                if existing:
+                    failed += 1
+                    errors.append(f"Row {idx + 2}: Content '{title}' already exists")
+                    continue
+                await db.content.insert_one(content_data)
+                successful += 1
+                imported.append(title)
+            except Exception as e:
+                failed += 1
+                errors.append(f"Row {idx + 2}: {str(e)}")
+        return BulkImportResult(success=successful > 0, total_rows=len(df), successful_imports=successful, failed_imports=failed, errors=errors[:50], imported_content=imported[:50])
+    except Exception as e:
+        logger.exception('Import from URL error')
+        raise HTTPException(status_code=400, detail=f"Import from URL failed: {str(e)}")
 
 # ============== WATCHLIST ROUTES ==============
 @api_router.get('/watchlist')
@@ -369,7 +662,6 @@ class WatchlistCreate(BaseModel):
 
 @api_router.post('/watchlist')
 async def add_watchlist(item: WatchlistCreate, current_user: User = Depends(get_current_user)):
-    # Check duplicate
     existing = await db.watchlist.find_one({"user_id": current_user.id, "content_id": item.content_id})
     if existing:
         raise HTTPException(status_code=400, detail="Already in watchlist")
@@ -395,7 +687,7 @@ async def delete_watchlist(item_id: str, current_user: User = Depends(get_curren
     res = await db.watchlist.delete_one({"id": item_id, "user_id": current_user.id})
     return {"deleted": res.deleted_count > 0}
 
-# Health and router include remain at bottom
+# Mount router and middleware
 app.include_router(api_router)
 app.add_middleware(
     CORSMiddleware,
@@ -404,3 +696,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Startup seed and default admin ensure
+@app.on_event('startup')
+async def on_startup():
+    try:
+        await db.admins.update_one(
+            {"username": "admin"},
+            {"$set": {"password_hash": hash_password('admin123'), "is_admin": True},
+             "$setOnInsert": {"id": str(uuid.uuid4()), "created_at": datetime.utcnow(), "username": "admin"}},
+            upsert=True
+        )
+        logger.info("Default admin ensured/reset (admin/admin123)")
+    except Exception as e:
+        logger.error(f"Failed to ensure default admin: {e}")
