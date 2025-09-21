@@ -650,6 +650,10 @@ async def get_content_by_id(content_id: str):
     if not doc:
         raise HTTPException(status_code=404, detail="Content not found")
     doc.pop('_id', None)
+    # Convert datetime objects to ISO strings
+    for field in ['created_at', 'updated_at']:
+        if field in doc and hasattr(doc[field], 'isoformat'):
+            doc[field] = doc[field].isoformat()
     return Content(**doc)
 
 @api_router.get('/countries')
