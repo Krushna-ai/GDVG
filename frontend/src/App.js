@@ -118,6 +118,25 @@ function App() {
               )}
             </div>
           </div>
+          {/* Header with GDVG logo */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl font-extrabold tracking-wide bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent drop-shadow">GDVG</span>
+              <span className={`${darkTheme ? 'text-gray-400' : 'text-gray-600'} hidden sm:inline`}>Global Drama Verse Guide</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <button onClick={() => window.location.assign('/admin')} className={`${darkTheme ? 'text-gray-400 hover:text-white' : 'text-gray-700 hover:text-gray-900'} text-sm underline`}>Admin</button>
+              {!isAuthenticated ? (
+                <>
+                  <button onClick={() => openUserAuth(true)} className="px-4 py-2 rounded-lg bg-red-600 text-white">Sign In</button>
+                  <button onClick={() => openUserAuth(false)} className={`px-4 py-2 rounded-lg ${darkTheme ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-900'}`}>Sign Up</button>
+                </>
+              ) : (
+                <button onClick={handleLogout} className={`px-4 py-2 rounded-lg ${darkTheme ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-900'}`}>Logout</button>
+              )}
+            </div>
+          </div>
+
 
           <FeaturedSections darkTheme={darkTheme} handleContentClick={handleContentClick} />
 
