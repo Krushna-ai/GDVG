@@ -144,6 +144,10 @@ backend:
         agent: "testing"
         comment: "✅ PRIORITY A ADMIN BULK IMPORT SYSTEM WORKING PERFECTLY! Comprehensive testing with provided credentials (globaldramaverseguide45@gmail.com/krushna45) completed successfully: ✅ POST /api/admin/login - Admin authentication successful, access token obtained ✅ POST /api/admin/bulk-import/from-url with CSV URL (https://customer-assets.emergentagent.com/job_routefix-drama/artifacts/8sooripa_Top_Drama199.csv) - Processed 200 rows with duplicate-safe import (0 successful, 200 failed as duplicates - this is expected behavior). Admin bulk import system is production-ready and handles duplicates correctly."
 
+      - working: true
+        agent: "main"
+        comment: "Added job-based bulk import with progress + history: new endpoints /api/admin/bulk-import (file), /api/admin/bulk-import/from-url (existing), /api/admin/bulk-import/preview and /api/admin/bulk-import/preview-url, /api/admin/bulk-import/jobs and /api/admin/bulk-import/jobs/{job_id}. Stores progress in import_jobs with periodic updates."
+
   - task: "Content API endpoints"
     implemented: true
     working: true
