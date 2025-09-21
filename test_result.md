@@ -414,7 +414,7 @@ test_plan:
         agent: "main"
         comment: "Restored/verified all critical /api routes, seeded email-based admin, re-imported Top_Drama199.csv with skip-duplicates (all duplicates as existing), fixed ContentDetail to use API schema (id, poster_url, content_type, genres), ensured card navigation uses /content/:id/:slug. Homepage grid pulls from /api/content and featured sections from /api/content/featured. Ready for backend then frontend automated tests."
 
-  test_priority: "stuck_first"
+  test_priority: "high_first"
 
   - task: "Day 8-9: Enhanced Social Interactions - Review Likes"
     implemented: true
