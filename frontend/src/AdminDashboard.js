@@ -15,6 +15,18 @@ const AdminDashboard = ({ darkTheme, onLogout }) => {
     fetchStats();
   }, []);
 
+  const safeLogout = () => {
+    try {
+      localStorage.removeItem('admin_token');
+    } catch {}
+    if (typeof onLogout === 'function') {
+      onLogout();
+    } else {
+      // Fallback: navigate back to admin login
+      window.location.assign('/admin');
+    }
+  };
+
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('admin_token');
@@ -25,7 +37,7 @@ const AdminDashboard = ({ darkTheme, onLogout }) => {
     } catch (error) {
       console.error('Error fetching stats:', error);
       if (error.response?.status === 401) {
-        onLogout();
+        safeLogout();
       }
     } finally {
       setLoading(false);
@@ -33,8 +45,7 @@ const AdminDashboard = ({ darkTheme, onLogout }) => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('admin_token');
-    onLogout();
+    safeLogout();
   };
 
   const StatCard = ({ title, value, icon, color }) => (
