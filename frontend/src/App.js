@@ -132,10 +132,16 @@ function App() {
   };
 
   const AdminRoutes = () => {
+    const navigate = useNavigate();
+    const handleAdminLogout = () => {
+      // Clear tokens and route to admin login
+      localStorage.removeItem('admin_token');
+      navigate('/admin');
+    };
     return (
       <Routes>
         <Route index element={<AdminLogin darkTheme={darkTheme} />} />
-        <Route path="dashboard" element={<AdminDashboard darkTheme={darkTheme} />} />
+        <Route path="dashboard" element={<AdminDashboard darkTheme={darkTheme} onLogout={handleAdminLogout} />} />
         <Route path="content" element={<ContentManagement darkTheme={darkTheme} />} />
       </Routes>
     );
