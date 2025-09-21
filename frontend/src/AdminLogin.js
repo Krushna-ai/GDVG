@@ -62,6 +62,12 @@ const AdminLogin = ({ onLogin, darkTheme }) => {
           </p>
         </div>
 
+        {!backendHealthy && (
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-lg text-sm">
+            Backend not reachable right now. Please try again in a moment.
+          </div>
+        )}
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
