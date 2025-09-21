@@ -558,6 +558,10 @@ async def get_content(page: int = Query(1, ge=1), limit: int = Query(20, ge=1, l
     items: List[Content] = []
     for d in docs:
         d.pop('_id', None)
+        # Convert datetime objects to ISO strings
+        for field in ['created_at', 'updated_at']:
+            if field in d and hasattr(d[field], 'isoformat'):
+                d[field] = d[field].isoformat()
         items.append(Content(**d))
     return ContentResponse(contents=items, total=total, page=page, limit=limit)
 
