@@ -637,6 +637,10 @@ async def content_featured(category: Optional[str] = 'trending', country: Option
     items = []
     for d in docs:
         d.pop('_id', None)
+        # Convert datetime objects to ISO strings
+        for field in ['created_at', 'updated_at']:
+            if field in d and hasattr(d[field], 'isoformat'):
+                d[field] = d[field].isoformat()
         items.append(Content(**d))
     return items
 
