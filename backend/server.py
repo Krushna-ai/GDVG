@@ -269,6 +269,11 @@ async def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(
     if not admin:
         raise HTTPException(status_code=401, detail="Admin not found")
     admin.pop('_id', None)
+    
+    # Convert datetime objects to strings if they exist
+    if 'created_at' in admin and hasattr(admin['created_at'], 'isoformat'):
+        admin['created_at'] = admin['created_at'].isoformat()
+    
     return AdminUser(**admin)
 
 
