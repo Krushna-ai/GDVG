@@ -124,12 +124,12 @@ backend:
         comment: "✅ ADMIN BULK IMPORT SYSTEM WORKING PERFECTLY! Comprehensive testing completed with 100% success rate (10/10 tests passed). All admin endpoints now fully functional: ✅ POST /api/admin/login - Successfully authenticates admin user (admin/admin123) and correctly rejects wrong passwords (401) ✅ POST /api/admin/bulk-import with CSV minimal data - Processed 3 rows with title-only data, all successful imports ✅ POST /api/admin/bulk-import with mixed valid/invalid CSV rows - Correctly handled 5 rows: 4 successful, 1 failed with proper error reporting ✅ POST /api/admin/bulk-import with XLSX small in-memory file - Successfully imported 3 items from Excel format ✅ GET /api/content/featured after imports - Found 16 imported items in featured content ✅ GET /api/content/search after imports - Found 10 imported test items in search results ✅ GET /api/countries, /api/genres, /api/content-types - All filter endpoints working (7 countries, 12 genres, 4 content types). Admin bulk import system is production-ready with flexible defaults and robust error handling!"
 
   - task: "Content API endpoints"
-    implemented: true
-    working: true
+    implemented: false
+    working: false
     file: "server.py"
-    stuck_count: 0
+    stuck_count: 2
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
@@ -149,6 +149,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ REVIEW REQUEST ENDPOINTS TESTING COMPLETE! All specified endpoints working perfectly with 100% success rate (5/5 tests passed): ✅ GET /api/health - Returns 200 with {status: ok} ✅ POST /api/admin/login with {username:'admin', password:'admin123'} - Returns 200 with access_token ✅ GET /api/content - Returns list with 20 items (>= 0 requirement met) ✅ POST /api/admin/bulk-import/preview with small CSV (title only, 2 rows) - Returns preview for 2 rows successfully ✅ GET /api/content/featured - Returns 200 with 10 items. All endpoints using correct environment URL (https://dramaguide.preview.emergentagent.com/api) and functioning as expected. Backend API is production-ready!"
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL: REVIEW REQUEST VALIDATION FAILED - ALL CONTENT API ENDPOINTS RETURN 404! Current server.py implementation contains only 4 watchlist routes but is missing ALL core content API routes: GET /api/content, GET /api/content/search, GET /api/content/featured, GET /api/countries, GET /api/genres, GET /api/content-types. Backend logs confirm all requests return 404 Not Found. The FastAPI application is incomplete with no @api_router decorators for content endpoints. URGENT: Main agent must implement all missing content API route handlers."
 
   - task: "Database models and schema"
     implemented: true
