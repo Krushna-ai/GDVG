@@ -2960,16 +2960,266 @@ Test Movie 2"""
                     print(f"  - {result['test']}: {result['message']}")
         
         return passed == total
+    
+    def test_priority_a_health_endpoint(self):
+        """Test GET /api/health - Health check endpoint"""
+        try:
+            response = self.make_request("GET", "/health")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("status") == "ok":
+                    self.log_test("Priority A - Health Endpoint", True, "Health endpoint returns 200 with {status: ok}")
+                else:
+                    self.log_test("Priority A - Health Endpoint", False, f"Health endpoint returned unexpected data: {data}")
+            else:
+                self.log_test("Priority A - Health Endpoint", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("Priority A - Health Endpoint", False, f"Exception: {str(e)}")
+    
+    def test_priority_a_admin_login(self):
+        """Test POST /api/admin/login - Admin authentication"""
+        try:
+            login_data = {
+                "username": ADMIN_USERNAME,
+                "password": ADMIN_PASSWORD
+            }
+            
+            response = self.make_request("POST", "/admin/login", json=login_data)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if "access_token" in data and "token_type" in data:
+                    self.admin_token = data["access_token"]
+                    self.log_test("Priority A - Admin Login", True, f"Admin login successful, token obtained")
+                else:
+                    self.log_test("Priority A - Admin Login", False, f"Login response missing token fields: {data}")
+            else:
+                self.log_test("Priority A - Admin Login", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("Priority A - Admin Login", False, f"Exception: {str(e)}")
+    
+    def test_priority_a_content_list(self):
+        """Test GET /api/content - Content list endpoint"""
+        try:
+            response = self.make_request("GET", "/content")
+            
+            if response.status_code == 200:
+                data = response.json()
+                required_fields = ["contents", "total", "page", "limit"]
+                
+                if all(field in data for field in required_fields):
+                    contents = data["contents"]
+                    total = data["total"]
+                    
+                    if isinstance(contents, list) and total >= 0:
+                        # Store first content ID for later tests
+                        if len(contents) > 0:
+                            self.sample_content_id = contents[0]["id"]
+                        
+                        self.log_test("Priority A - Content List", True, f"Content list returned {len(contents)} items, total: {total}")
+                    else:
+                        self.log_test("Priority A - Content List", False, f"Invalid data structure: contents={type(contents)}, total={total}")
+                else:
+                    missing_fields = [f for f in required_fields if f not in data]
+                    self.log_test("Priority A - Content List", False, f"Missing response fields: {missing_fields}")
+            else:
+                self.log_test("Priority A - Content List", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("Priority A - Content List", False, f"Exception: {str(e)}")
+    
+    def test_priority_a_featured_content(self):
+        """Test GET /api/content/featured - Featured content endpoint"""
+        try:
+            response = self.make_request("GET", "/content/featured?category=trending&limit=10")
+            
+            if response.status_code == 200:
+                contents = response.json()
+                
+                if isinstance(contents, list):
+                    if len(contents) > 0:
+                        # Verify each item has required fields
+                        sample_item = contents[0]
+                        required_fields = ["id", "title", "poster_url", "content_type"]
+                        
+                        if all(field in sample_item for field in required_fields):
+                            self.log_test("Priority A - Featured Content", True, f"Featured content returned {len(contents)} items with required fields")
+                        else:
+                            missing_fields = [f for f in required_fields if f not in sample_item]
+                            self.log_test("Priority A - Featured Content", False, f"Featured items missing fields: {missing_fields}")
+                    else:
+                        self.log_test("Priority A - Featured Content", True, "Featured content returned empty array (acceptable)")
+                else:
+                    self.log_test("Priority A - Featured Content", False, f"Featured content should return array, got: {type(contents)}")
+            else:
+                self.log_test("Priority A - Featured Content", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("Priority A - Featured Content", False, f"Exception: {str(e)}")
+    
+    def test_priority_a_content_by_id(self):
+        """Test GET /api/content/{id} - Individual content retrieval"""
+        if not self.sample_content_id:
+            self.log_test("Priority A - Content by ID", False, "No sample content ID available from content list")
+            return
+            
+        try:
+            response = self.make_request("GET", f"/content/{self.sample_content_id}")
+            
+            if response.status_code == 200:
+                content = response.json()
+                required_fields = ["id", "title", "poster_url", "content_type"]
+                
+                if all(field in content for field in required_fields):
+                    if content["id"] == self.sample_content_id:
+                        self.log_test("Priority A - Content by ID", True, f"Retrieved content: {content['title']}")
+                    else:
+                        self.log_test("Priority A - Content by ID", False, "Returned content ID doesn't match requested ID")
+                else:
+                    missing_fields = [f for f in required_fields if f not in content]
+                    self.log_test("Priority A - Content by ID", False, f"Content missing fields: {missing_fields}")
+            else:
+                self.log_test("Priority A - Content by ID", False, f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("Priority A - Content by ID", False, f"Exception: {str(e)}")
+    
+    def test_priority_a_bulk_import(self):
+        """Test POST /api/admin/bulk-import/from-url - Bulk import from CSV URL"""
+        if not self.admin_token:
+            self.log_test("Priority A - Bulk Import", False, "No admin token available")
+            return
+            
+        try:
+            # Set admin token for this request
+            original_token = self.auth_token
+            self.auth_token = self.admin_token
+            
+            import_data = {
+                "csv_url": CSV_URL
+            }
+            
+            response = self.make_request("POST", "/admin/bulk-import/from-url", json=import_data)
+            
+            if response.status_code == 200:
+                data = response.json()
+                required_fields = ["success", "total_rows", "successful_imports", "failed_imports"]
+                
+                if all(field in data for field in required_fields):
+                    success = data["success"]
+                    total_rows = data["total_rows"]
+                    successful_imports = data["successful_imports"]
+                    failed_imports = data["failed_imports"]
+                    
+                    # Success can be false if all imports are duplicates (which is OK)
+                    if total_rows > 0:
+                        self.log_test("Priority A - Bulk Import", True, 
+                                    f"Bulk import processed {total_rows} rows: {successful_imports} successful, {failed_imports} failed. Success: {success}")
+                    else:
+                        self.log_test("Priority A - Bulk Import", False, "Bulk import processed 0 rows")
+                else:
+                    missing_fields = [f for f in required_fields if f not in data]
+                    self.log_test("Priority A - Bulk Import", False, f"Bulk import response missing fields: {missing_fields}")
+            else:
+                self.log_test("Priority A - Bulk Import", False, f"HTTP {response.status_code}: {response.text}")
+            
+            # Restore original token
+            self.auth_token = original_token
+                
+        except Exception as e:
+            self.log_test("Priority A - Bulk Import", False, f"Exception: {str(e)}")
+            # Restore original token in case of exception
+            self.auth_token = original_token
+    
+    def run_priority_a_tests(self):
+        """Run Priority A readiness tests as specified in review request"""
+        print("🚀 Starting Priority A Readiness Tests for Global Drama Verse Guide...")
+        print(f"Backend URL: {self.base_url}")
+        print(f"Admin Credentials: {ADMIN_USERNAME}")
+        print(f"CSV URL: {CSV_URL}")
+        print("=" * 80)
+        
+        # Priority A Core Tests as specified in review request
+        self.test_priority_a_health_endpoint()
+        self.test_priority_a_admin_login()
+        self.test_priority_a_content_list()
+        self.test_priority_a_featured_content()
+        self.test_priority_a_content_by_id()
+        self.test_priority_a_bulk_import()
+        
+        # Print summary
+        self.print_priority_a_summary()
+        
+        # Return success status
+        priority_a_tests = [result for result in self.test_results if "Priority A" in result["test"]]
+        passed = sum(1 for result in priority_a_tests if result["success"])
+        total = len(priority_a_tests)
+        return passed == total
+    
+    def print_priority_a_summary(self):
+        """Print Priority A test results summary"""
+        print("\n" + "=" * 80)
+        print("🎯 PRIORITY A READINESS TEST SUMMARY")
+        print("=" * 80)
+        
+        # Filter only Priority A tests
+        priority_a_tests = [result for result in self.test_results if "Priority A" in result["test"]]
+        
+        total_tests = len(priority_a_tests)
+        passed_tests = sum(1 for result in priority_a_tests if result["success"])
+        failed_tests = total_tests - passed_tests
+        
+        print(f"Priority A Tests: {total_tests}")
+        print(f"✅ Passed: {passed_tests}")
+        print(f"❌ Failed: {failed_tests}")
+        print(f"Success Rate: {(passed_tests/total_tests)*100:.1f}%" if total_tests > 0 else "No tests run")
+        
+        print("\n📋 DETAILED RESULTS:")
+        for result in priority_a_tests:
+            status = "✅" if result["success"] else "❌"
+            print(f"   {status} {result['test']}: {result['message']}")
+        
+        if failed_tests > 0:
+            print("\n🔍 FAILED TESTS DETAILS:")
+            for result in priority_a_tests:
+                if not result["success"]:
+                    print(f"   ❌ {result['test']}: {result['message']}")
+                    if result.get("details"):
+                        print(f"      Details: {result['details']}")
+        
+        print("\n" + "=" * 80)
+        
+        if passed_tests == total_tests:
+            print("🎉 ALL PRIORITY A TESTS PASSED! Backend is ready for Priority A features!")
+        elif passed_tests >= total_tests * 0.8:
+            print("✅ Most Priority A tests passed! Backend is mostly ready.")
+        else:
+            print("⚠️  Many Priority A tests failed. Backend needs attention before Priority A readiness.")
+        
+        print("=" * 80)
 
 if __name__ == "__main__":
     tester = BackendTester()
     
-    # Run focused admin tests as requested
-    success = tester.run_focused_admin_tests()
-    
-    if success:
-        print("\n🎉 All focused admin tests passed! Backend API is working correctly.")
-        sys.exit(0)
+    # Check if we should run Priority A tests only
+    if len(sys.argv) > 1 and sys.argv[1] == "--priority-a":
+        success = tester.run_priority_a_tests()
+        if success:
+            print("\n🎉 All Priority A tests passed! Backend API is ready for Priority A features.")
+            sys.exit(0)
+        else:
+            print("\n⚠️  Some Priority A tests failed. Check the details above.")
+            sys.exit(1)
     else:
-        print("\n⚠️  Some tests failed. Check the details above.")
-        sys.exit(1)
+        # Run focused admin tests as requested
+        success = tester.run_focused_admin_tests()
+        
+        if success:
+            print("\n🎉 All focused admin tests passed! Backend API is working correctly.")
+            sys.exit(0)
+        else:
+            print("\n⚠️  Some tests failed. Check the details above.")
+            sys.exit(1)
