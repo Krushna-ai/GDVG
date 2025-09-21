@@ -3209,7 +3209,7 @@ All Empty,,,,,"""
         print("=" * 80)
         
         # Run the specific review request tests first
-        self.test_review_request_endpoints()
+        self.test_review_request_bulk_import_endpoints()
         
         # Admin authentication and bulk import tests (NEW - PRIORITY)
         print("\n📋 ADMIN BULK IMPORT TESTS (PRIORITY)")
