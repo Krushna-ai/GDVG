@@ -3973,6 +3973,15 @@ if __name__ == "__main__":
         else:
             print("\n⚠️  Some Priority A tests failed. Check the details above.")
             sys.exit(1)
+    elif len(sys.argv) > 1 and sys.argv[1] == "--priority-d":
+        # Run Priority D bulk import endpoints tests
+        success = tester.run_priority_d_bulk_import_tests()
+        if success:
+            print("\n🎉 All Priority D bulk import endpoints tests passed! Endpoints are working correctly.")
+            sys.exit(0)
+        else:
+            print("\n⚠️  Some Priority D tests failed. Check the details above.")
+            sys.exit(1)
     elif len(sys.argv) > 1 and sys.argv[1] == "--review-request":
         # Run the specific review request tests
         success = tester.run_review_request_tests()
