@@ -834,6 +834,244 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
           )}
         </div>
       )}
+        </>
+      )}
+
+      {/* Import History Tab */}
+      {activeTab === 'history' && (
+        <div className="space-y-4">
+          {historyLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <svg className="animate-spin h-8 w-8 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+          ) : importHistory.length === 0 ? (
+            <div className={`text-center py-12 ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
+              <svg className="mx-auto h-12 w-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p>No import history yet</p>
+            </div>
+          ) : (
+            <>
+              <div className={`rounded-xl border overflow-hidden ${darkTheme ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className={`${darkTheme ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                      <tr>
+                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-gray-300' : 'text-gray-500'}`}>
+                          Source
+                        </th>
+                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-gray-300' : 'text-gray-500'}`}>
+                          Status
+                        </th>
+                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-gray-300' : 'text-gray-500'}`}>
+                          Total Rows
+                        </th>
+                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-gray-300' : 'text-gray-500'}`}>
+                          Successful
+                        </th>
+                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-gray-300' : 'text-gray-500'}`}>
+                          Failed
+                        </th>
+                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-gray-300' : 'text-gray-500'}`}>
+                          Date
+                        </th>
+                        <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${darkTheme ? 'text-gray-300' : 'text-gray-500'}`}>
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className={`divide-y ${darkTheme ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                      {importHistory.map((job) => (
+                        <tr key={job.id} className={`${darkTheme ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkTheme ? 'text-gray-300' : 'text-gray-900'}`}>
+                            <div className="flex items-center">
+                              {job.source_type === 'url' ? (
+                                <svg className="h-5 w-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                </svg>
+                              ) : (
+                                <svg className="h-5 w-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              )}
+                              <div className="max-w-xs truncate" title={job.source}>
+                                {job.source.length > 40 ? `...${job.source.slice(-40)}` : job.source}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              job.status === 'completed' ? 'bg-green-100 text-green-800' :
+                              job.status === 'failed' ? 'bg-red-100 text-red-800' :
+                              job.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {job.status}
+                            </span>
+                          </td>
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkTheme ? 'text-gray-300' : 'text-gray-900'}`}>
+                            {job.total_rows}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
+                            {job.successful_imports}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-medium">
+                            {job.failed_imports}
+                          </td>
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {new Date(job.started_at).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <button
+                              onClick={() => viewJobDetails(job.id)}
+                              className="text-red-600 hover:text-red-900 font-medium"
+                            >
+                              View Details
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Pagination */}
+              {historyTotal > 10 && (
+                <div className="flex items-center justify-between">
+                  <div className={`text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-700'}`}>
+                    Showing {Math.min((historyPage - 1) * 10 + 1, historyTotal)} to {Math.min(historyPage * 10, historyTotal)} of {historyTotal} jobs
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                      disabled={historyPage === 1}
+                      className={`px-4 py-2 rounded-lg ${
+                        historyPage === 1
+                          ? 'opacity-50 cursor-not-allowed'
+                          : ''
+                      } ${darkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setHistoryPage(p => p + 1)}
+                      disabled={historyPage * 10 >= historyTotal}
+                      className={`px-4 py-2 rounded-lg ${
+                        historyPage * 10 >= historyTotal
+                          ? 'opacity-50 cursor-not-allowed'
+                          : ''
+                      } ${darkTheme ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Job Detail Modal */}
+      {selectedJobDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className={`w-full max-w-4xl rounded-xl shadow-xl max-h-[80vh] overflow-y-auto ${darkTheme ? 'bg-gray-900 border border-gray-800' : 'bg-white'}`}>
+            <div className={`p-4 border-b flex items-center justify-between sticky top-0 ${darkTheme ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+              <h4 className={`text-lg font-semibold ${darkTheme ? 'text-white' : 'text-gray-900'}`}>Import Job Details</h4>
+              <button onClick={() => setSelectedJobDetail(null)} className={`${darkTheme ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}>✕</button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className={`p-4 rounded-lg ${darkTheme ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <div className={`text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Job ID</div>
+                  <div className={`text-xs font-mono ${darkTheme ? 'text-gray-300' : 'text-gray-900'}`}>{selectedJobDetail.id}</div>
+                </div>
+                <div className={`p-4 rounded-lg ${darkTheme ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <div className={`text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Admin</div>
+                  <div className={`text-sm ${darkTheme ? 'text-gray-300' : 'text-gray-900'}`}>{selectedJobDetail.admin_username}</div>
+                </div>
+                <div className={`p-4 rounded-lg ${darkTheme ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <div className={`text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Source Type</div>
+                  <div className={`text-sm ${darkTheme ? 'text-gray-300' : 'text-gray-900'}`}>{selectedJobDetail.source_type}</div>
+                </div>
+                <div className={`p-4 rounded-lg ${darkTheme ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <div className={`text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Status</div>
+                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    selectedJobDetail.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    selectedJobDetail.status === 'failed' ? 'bg-red-100 text-red-800' :
+                    selectedJobDetail.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {selectedJobDetail.status}
+                  </span>
+                </div>
+              </div>
+
+              <div className={`p-4 rounded-lg ${darkTheme ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                <div className={`text-sm mb-2 ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Source</div>
+                <div className={`text-sm break-all ${darkTheme ? 'text-gray-300' : 'text-gray-900'}`}>{selectedJobDetail.source}</div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-4">
+                <div className={`p-4 rounded-lg ${darkTheme ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <div className={`text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Total Rows</div>
+                  <div className={`text-2xl font-bold ${darkTheme ? 'text-white' : 'text-gray-900'}`}>{selectedJobDetail.total_rows}</div>
+                </div>
+                <div className={`p-4 rounded-lg ${darkTheme ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <div className={`text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Processed</div>
+                  <div className={`text-2xl font-bold ${darkTheme ? 'text-white' : 'text-gray-900'}`}>{selectedJobDetail.processed_rows}</div>
+                </div>
+                <div className={`p-4 rounded-lg ${darkTheme ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <div className={`text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Successful</div>
+                  <div className="text-2xl font-bold text-green-600">{selectedJobDetail.successful_imports}</div>
+                </div>
+                <div className={`p-4 rounded-lg ${darkTheme ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <div className={`text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Failed</div>
+                  <div className="text-2xl font-bold text-red-600">{selectedJobDetail.failed_imports}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className={`p-4 rounded-lg ${darkTheme ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <div className={`text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Started At</div>
+                  <div className={`text-sm ${darkTheme ? 'text-gray-300' : 'text-gray-900'}`}>
+                    {new Date(selectedJobDetail.started_at).toLocaleString()}
+                  </div>
+                </div>
+                {selectedJobDetail.finished_at && (
+                  <div className={`p-4 rounded-lg ${darkTheme ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                    <div className={`text-sm ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Finished At</div>
+                    <div className={`text-sm ${darkTheme ? 'text-gray-300' : 'text-gray-900'}`}>
+                      {new Date(selectedJobDetail.finished_at).toLocaleString()}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {selectedJobDetail.errors && selectedJobDetail.errors.length > 0 && (
+                <div className={`p-4 rounded-lg ${darkTheme ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <div className={`text-sm font-medium mb-2 ${darkTheme ? 'text-red-400' : 'text-red-600'}`}>
+                    Errors ({selectedJobDetail.errors.length})
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    <ul className={`text-xs space-y-1 ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {selectedJobDetail.errors.map((error, idx) => (
+                        <li key={idx} className="break-words">• {error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
