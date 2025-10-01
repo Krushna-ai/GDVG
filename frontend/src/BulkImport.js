@@ -390,6 +390,54 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
         </button>
       </div>
 
+      {/* Import Progress Display */}
+      {uploading && jobProgress && (
+        <div className={`p-6 rounded-xl border ${darkTheme ? 'bg-gray-900 border-gray-700' : 'bg-blue-50 border-blue-200'}`}>
+          <h4 className={`font-semibold mb-4 ${darkTheme ? 'text-white' : 'text-gray-900'}`}>
+            Import in Progress...
+          </h4>
+          
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between mb-2">
+                <span className={`text-sm ${darkTheme ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Processing: {jobProgress.processed_rows} / {jobProgress.total_rows} rows
+                </span>
+                <span className={`text-sm font-medium ${darkTheme ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {jobProgress.total_rows > 0 ? Math.round((jobProgress.processed_rows / jobProgress.total_rows) * 100) : 0}%
+                </span>
+              </div>
+              <div className={`w-full rounded-full h-3 ${darkTheme ? 'bg-gray-800' : 'bg-gray-200'}`}>
+                <div
+                  className="bg-gradient-to-r from-red-600 to-red-700 h-3 rounded-full transition-all duration-300"
+                  style={{ width: `${jobProgress.total_rows > 0 ? (jobProgress.processed_rows / jobProgress.total_rows) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4">
+              <div className={`text-center p-3 rounded-lg ${darkTheme ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className="text-2xl font-bold text-green-600">{jobProgress.successful_imports}</div>
+                <div className={`text-xs ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Success</div>
+              </div>
+              <div className={`text-center p-3 rounded-lg ${darkTheme ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className="text-2xl font-bold text-red-600">{jobProgress.failed_imports}</div>
+                <div className={`text-xs ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Failed</div>
+              </div>
+              <div className={`text-center p-3 rounded-lg ${darkTheme ? 'bg-gray-800' : 'bg-white'}`}>
+                <div className={`text-2xl font-bold ${darkTheme ? 'text-white' : 'text-gray-900'}`}>
+                  {jobProgress.processed_rows}
+                </div>
+                <div className={`text-xs ${darkTheme ? 'text-gray-400' : 'text-gray-600'}`}>Processed</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Form (only show when on import tab) */}
+      {activeTab === 'import' && (
+        <>
       {/* Instructions */}
       {showTemplate && (
         <div className={`p-6 rounded-xl border ${
