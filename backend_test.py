@@ -12,7 +12,7 @@ import time
 import io
 
 # Get backend URL from frontend .env
-BACKEND_URL = "https://routefix-drama.preview.emergentagent.com/api"
+BACKEND_URL = "https://globaldramas.preview.emergentagent.com/api"
 
 # Admin credentials for testing
 ADMIN_USERNAME = "globaldramaverseguide45@gmail.com"

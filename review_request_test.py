@@ -17,7 +17,7 @@ from typing import Dict, Any, List
 import time
 
 # Get backend URL from frontend .env
-BACKEND_URL = "https://routefix-drama.preview.emergentagent.com/api"
+BACKEND_URL = "https://globaldramas.preview.emergentagent.com/api"
 
 class ReviewRequestTester:
     def __init__(self):
