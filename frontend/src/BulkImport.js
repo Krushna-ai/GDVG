@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -13,6 +13,16 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
   const [dragOver, setDragOver] = useState(false);
   const [previewData, setPreviewData] = useState(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  
+  // New state for job tracking and history
+  const [activeTab, setActiveTab] = useState('import'); // 'import' or 'history'
+  const [currentJobId, setCurrentJobId] = useState(null);
+  const [jobProgress, setJobProgress] = useState(null);
+  const [importHistory, setImportHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [selectedJobDetail, setSelectedJobDetail] = useState(null);
 
   // Sample data for quick template generation
   const sampleData = [
