@@ -151,6 +151,18 @@ backend:
         agent: "testing"
         comment: "✅ PRIORITY D BULK IMPORT PROGRESS/HISTORY ENDPOINTS WORKING PERFECTLY! Comprehensive testing of new bulk import job tracking system completed with 100% success rate (9/9 tests passed): ✅ POST /api/admin/login with provided credentials (globaldramaverseguide45@gmail.com/krushna45) - Admin authentication successful ✅ GET /api/admin/bulk-import/jobs - Retrieved jobs list with proper pagination structure {jobs, total, page, limit} ✅ POST /api/admin/bulk-import/preview-url with Top_Drama199.csv URL - Preview generated: 200 total rows, 0 will import, 50 will skip (duplicate-safe behavior) ✅ POST /api/admin/bulk-import/from-url with same URL - Import completed: 0 successful, 200 failed (all duplicates as expected) ✅ GET /api/admin/bulk-import/jobs after import - Job count increased from 0 to 1, latest job completed with status 'completed' and processed_rows = total_rows (200/200) ✅ GET /api/admin/bulk-import/jobs/{nonexistent} - Correctly returned 404 for non-existent job ID ✅ GET /api/admin/bulk-import/jobs/{job_id} - Retrieved individual job details successfully. All bulk import progress/history endpoints are production-ready with proper job tracking, status management, and error handling!"
 
+  - task: "Priority D: Bulk Import UI Enhancement"
+    implemented: true
+    working: "NA"
+    file: "BulkImport.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented comprehensive bulk import UI enhancements: ✅ Tab navigation (New Import / Import History) ✅ Real-time progress tracking with polling (2s interval) showing processed_rows/total_rows ✅ Visual progress bar with live statistics (success/failed/processed counts) ✅ Import history table with pagination (source, status, dates, statistics) ✅ Job details modal with full job information and error logs ✅ Source type icons (file vs URL) ✅ Status badges (completed/failed/processing) ✅ Responsive table design with truncated long URLs. Frontend now fully integrated with backend job tracking endpoints. Ready for frontend testing."
+
   - task: "Content API endpoints"
     implemented: true
     working: true
