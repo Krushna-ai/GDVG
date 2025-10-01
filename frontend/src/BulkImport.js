@@ -366,6 +366,30 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
         </button>
       </div>
 
+      {/* Tab Navigation */}
+      <div className={`flex border-b ${darkTheme ? 'border-gray-700' : 'border-gray-200'}`}>
+        <button
+          onClick={() => setActiveTab('import')}
+          className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+            activeTab === 'import'
+              ? `${darkTheme ? 'border-red-600 text-red-600' : 'border-red-600 text-red-600'}`
+              : `${darkTheme ? 'border-transparent text-gray-400 hover:text-gray-200' : 'border-transparent text-gray-500 hover:text-gray-700'}`
+          }`}
+        >
+          New Import
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+            activeTab === 'history'
+              ? `${darkTheme ? 'border-red-600 text-red-600' : 'border-red-600 text-red-600'}`
+              : `${darkTheme ? 'border-transparent text-gray-400 hover:text-gray-200' : 'border-transparent text-gray-500 hover:text-gray-700'}`
+          }`}
+        >
+          Import History
+        </button>
+      </div>
+
       {/* Instructions */}
       {showTemplate && (
         <div className={`p-6 rounded-xl border ${
