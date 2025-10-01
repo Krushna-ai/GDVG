@@ -46,6 +46,82 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
     }
   ];
 
+  // Fetch import history when switching to history tab
+  useEffect(() => {
+    if (activeTab === 'history') {
+      fetchImportHistory();
+    }
+  }, [activeTab, historyPage]);
+
+  // Poll for job progress when there's an active job
+  useEffect(() => {
+    if (currentJobId && uploading) {
+      const interval = setInterval(() => {
+        fetchJobProgress(currentJobId);
+      }, 2000); // Poll every 2 seconds
+      
+      return () => clearInterval(interval);
+    }
+  }, [currentJobId, uploading]);
+
+  const fetchImportHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const token = localStorage.getItem('admin_token');
+      const response = await axios.get(`${API}/admin/bulk-import/jobs?page=${historyPage}&limit=10`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setImportHistory(response.data.jobs || []);
+      setHistoryTotal(response.data.total || 0);
+    } catch (error) {
+      console.error('Failed to fetch import history:', error);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const fetchJobProgress = async (jobId) => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      const response = await axios.get(`${API}/admin/bulk-import/jobs/${jobId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const job = response.data;
+      setJobProgress(job);
+      
+      // If job is completed or failed, stop polling
+      if (job.status === 'completed' || job.status === 'failed') {
+        setUploading(false);
+        setImportResult({
+          success: job.successful_imports > 0,
+          total_rows: job.total_rows,
+          successful_imports: job.successful_imports,
+          failed_imports: job.failed_imports,
+          errors: job.errors || [],
+          imported_content: []
+        });
+        setCurrentJobId(null);
+        setJobProgress(null);
+        if (onImportComplete) onImportComplete();
+      }
+    } catch (error) {
+      console.error('Failed to fetch job progress:', error);
+    }
+  };
+
+  const viewJobDetails = async (jobId) => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      const response = await axios.get(`${API}/admin/bulk-import/jobs/${jobId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setSelectedJobDetail(response.data);
+    } catch (error) {
+      console.error('Failed to fetch job details:', error);
+      alert('Failed to load job details');
+    }
+  };
+
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
