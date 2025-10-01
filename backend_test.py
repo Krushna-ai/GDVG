@@ -3700,6 +3700,266 @@ All Empty,,,,,"""
                 print(f"  ✅ {test['test']}: {test['message']}")
         
         return success_rate == 100
+    
+    # Priority D Bulk Import Tests
+    def test_bulk_import_jobs_list(self):
+        """Test GET /api/admin/bulk-import/jobs - List import jobs with pagination"""
+        if not self.admin_token:
+            self.log_test("Priority D - Bulk Import Jobs List", False, "No admin token available")
+            return
+            
+        try:
+            # Test with pagination parameters as specified in review request
+            response = self.make_request("GET", "/admin/bulk-import/jobs?page=1&limit=10", 
+                                       headers={"Authorization": f"Bearer {self.admin_token}"})
+            
+            if response.status_code == 200:
+                data = response.json()
+                required_fields = ["jobs", "total", "page", "limit"]
+                
+                if all(field in data for field in required_fields):
+                    jobs = data["jobs"]
+                    total = data["total"]
+                    page = data["page"]
+                    limit = data["limit"]
+                    
+                    # Verify pagination structure
+                    if page == 1 and limit == 10:
+                        self.log_test("Priority D - Bulk Import Jobs List", True, 
+                                    f"Retrieved jobs list with proper pagination: {len(jobs)} jobs, total: {total}")
+                        
+                        # Store job ID for individual job test if available
+                        if len(jobs) > 0:
+                            self.test_job_id = jobs[0]["id"]
+                            
+                            # Verify job structure
+                            sample_job = jobs[0]
+                            expected_job_fields = ["id", "admin_username", "source_type", "source", "status", 
+                                                 "total_rows", "processed_rows", "successful_imports", 
+                                                 "failed_imports", "errors", "started_at", "finished_at"]
+                            
+                            missing_fields = [f for f in expected_job_fields if f not in sample_job]
+                            if not missing_fields:
+                                self.log_test("Priority D - Job Structure", True, 
+                                            "Job objects have all required fields")
+                            else:
+                                self.log_test("Priority D - Job Structure", False, 
+                                            f"Missing job fields: {missing_fields}")
+                        else:
+                            self.log_test("Priority D - Job Structure", True, 
+                                        "No jobs available for structure verification")
+                    else:
+                        self.log_test("Priority D - Bulk Import Jobs List", False, 
+                                    f"Pagination parameters not respected: page={page}, limit={limit}")
+                else:
+                    missing_fields = [f for f in required_fields if f not in data]
+                    self.log_test("Priority D - Bulk Import Jobs List", False, 
+                                f"Missing response fields: {missing_fields}")
+            else:
+                self.log_test("Priority D - Bulk Import Jobs List", False, 
+                            f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("Priority D - Bulk Import Jobs List", False, f"Exception: {str(e)}")
+    
+    def test_bulk_import_job_details(self):
+        """Test GET /api/admin/bulk-import/jobs/{job_id} - Get individual job details"""
+        if not self.admin_token:
+            self.log_test("Priority D - Bulk Import Job Details", False, "No admin token available")
+            return
+            
+        # First get a job ID from the jobs list
+        try:
+            response = self.make_request("GET", "/admin/bulk-import/jobs?page=1&limit=1", 
+                                       headers={"Authorization": f"Bearer {self.admin_token}"})
+            
+            if response.status_code == 200:
+                data = response.json()
+                jobs = data.get("jobs", [])
+                
+                if len(jobs) > 0:
+                    job_id = jobs[0]["id"]
+                    
+                    # Test individual job retrieval
+                    response = self.make_request("GET", f"/admin/bulk-import/jobs/{job_id}", 
+                                               headers={"Authorization": f"Bearer {self.admin_token}"})
+                    
+                    if response.status_code == 200:
+                        job = response.json()
+                        expected_fields = ["id", "admin_username", "source_type", "source", "status", 
+                                         "total_rows", "processed_rows", "successful_imports", 
+                                         "failed_imports", "errors", "started_at", "finished_at"]
+                        
+                        missing_fields = [f for f in expected_fields if f not in job]
+                        if not missing_fields:
+                            self.log_test("Priority D - Bulk Import Job Details", True, 
+                                        f"Retrieved job details successfully: {job['source']} ({job['status']})")
+                        else:
+                            self.log_test("Priority D - Bulk Import Job Details", False, 
+                                        f"Missing job fields: {missing_fields}")
+                    else:
+                        self.log_test("Priority D - Bulk Import Job Details", False, 
+                                    f"HTTP {response.status_code}: {response.text}")
+                else:
+                    self.log_test("Priority D - Bulk Import Job Details", True, 
+                                "No jobs available for individual job testing")
+            else:
+                self.log_test("Priority D - Bulk Import Job Details", False, 
+                            f"Could not get jobs list: HTTP {response.status_code}")
+            
+            # Test with non-existent job ID
+            response = self.make_request("GET", "/admin/bulk-import/jobs/nonexistent-job-id", 
+                                       headers={"Authorization": f"Bearer {self.admin_token}"})
+            
+            if response.status_code == 404:
+                self.log_test("Priority D - Non-existent Job ID", True, 
+                            "Correctly returned 404 for non-existent job ID")
+            else:
+                self.log_test("Priority D - Non-existent Job ID", False, 
+                            f"Expected 404, got {response.status_code}")
+                
+        except Exception as e:
+            self.log_test("Priority D - Bulk Import Job Details", False, f"Exception: {str(e)}")
+    
+    def test_bulk_import_preview_url(self):
+        """Test POST /api/admin/bulk-import/preview-url - Preview CSV from URL"""
+        if not self.admin_token:
+            self.log_test("Priority D - Bulk Import Preview URL", False, "No admin token available")
+            return
+            
+        try:
+            # Use a small CSV URL for testing as requested
+            preview_data = {
+                "csv_url": CSV_URL  # Using the same CSV URL from the existing tests
+            }
+            
+            response = self.make_request("POST", "/admin/bulk-import/preview-url", 
+                                       json=preview_data,
+                                       headers={"Authorization": f"Bearer {self.admin_token}"})
+            
+            if response.status_code == 200:
+                data = response.json()
+                required_fields = ["total_rows", "will_import", "will_skip", "detected_columns", "preview"]
+                
+                if all(field in data for field in required_fields):
+                    total_rows = data["total_rows"]
+                    will_import = data["will_import"]
+                    will_skip = data["will_skip"]
+                    detected_columns = data["detected_columns"]
+                    preview = data["preview"]
+                    
+                    # Verify preview structure
+                    if isinstance(preview, list) and len(preview) > 0:
+                        sample_row = preview[0]
+                        expected_row_fields = ["row", "title", "valid", "issues"]
+                        
+                        if all(field in sample_row for field in expected_row_fields):
+                            self.log_test("Priority D - Bulk Import Preview URL", True, 
+                                        f"Preview generated successfully: {total_rows} total rows, "
+                                        f"{will_import} will import, {will_skip} will skip")
+                        else:
+                            missing_fields = [f for f in expected_row_fields if f not in sample_row]
+                            self.log_test("Priority D - Bulk Import Preview URL", False, 
+                                        f"Missing preview row fields: {missing_fields}")
+                    else:
+                        self.log_test("Priority D - Bulk Import Preview URL", False, 
+                                    "Preview data is empty or invalid")
+                else:
+                    missing_fields = [f for f in required_fields if f not in data]
+                    self.log_test("Priority D - Bulk Import Preview URL", False, 
+                                f"Missing response fields: {missing_fields}")
+            else:
+                self.log_test("Priority D - Bulk Import Preview URL", False, 
+                            f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("Priority D - Bulk Import Preview URL", False, f"Exception: {str(e)}")
+    
+    def run_priority_d_bulk_import_tests(self):
+        """Run Priority D bulk import endpoints tests as specified in review request"""
+        print("🚀 Starting Priority D Bulk Import Endpoints Tests...")
+        print(f"Backend URL: {self.base_url}")
+        print(f"Admin Credentials: {ADMIN_USERNAME}")
+        print("=" * 80)
+        
+        # Priority D bulk import tests
+        self.test_priority_d_admin_login()
+        self.test_bulk_import_jobs_list()
+        self.test_bulk_import_job_details()
+        self.test_bulk_import_preview_url()
+        
+        # Print summary
+        self.print_priority_d_summary()
+        
+        # Return success status
+        priority_d_tests = [result for result in self.test_results if "Priority D" in result["test"]]
+        passed = sum(1 for result in priority_d_tests if result["success"])
+        total = len(priority_d_tests)
+        return passed == total
+    
+    def test_priority_d_admin_login(self):
+        """Test admin authentication for Priority D tests"""
+        try:
+            login_data = {
+                "username": ADMIN_USERNAME,
+                "password": ADMIN_PASSWORD
+            }
+            
+            response = self.make_request("POST", "/admin/login", json=login_data)
+            
+            if response.status_code == 200:
+                token_data = response.json()
+                if "access_token" in token_data:
+                    self.admin_token = token_data["access_token"]
+                    self.log_test("Priority D - Admin Login", True, 
+                                f"Admin authentication successful for {ADMIN_USERNAME}")
+                else:
+                    self.log_test("Priority D - Admin Login", False, "No access token in response")
+            else:
+                self.log_test("Priority D - Admin Login", False, 
+                            f"HTTP {response.status_code}: {response.text}")
+                
+        except Exception as e:
+            self.log_test("Priority D - Admin Login", False, f"Exception: {str(e)}")
+    
+    def print_priority_d_summary(self):
+        """Print Priority D test results summary"""
+        print("\n" + "=" * 80)
+        print("🎯 PRIORITY D BULK IMPORT ENDPOINTS TEST SUMMARY")
+        print("=" * 80)
+        
+        # Filter only Priority D tests
+        priority_d_tests = [result for result in self.test_results if "Priority D" in result["test"]]
+        
+        total_tests = len(priority_d_tests)
+        passed_tests = sum(1 for result in priority_d_tests if result["success"])
+        failed_tests = total_tests - passed_tests
+        
+        print(f"Priority D Tests: {total_tests}")
+        print(f"✅ Passed: {passed_tests}")
+        print(f"❌ Failed: {failed_tests}")
+        print(f"Success Rate: {(passed_tests/total_tests)*100:.1f}%" if total_tests > 0 else "No tests run")
+        
+        print("\n📋 DETAILED RESULTS:")
+        for result in priority_d_tests:
+            status = "✅" if result["success"] else "❌"
+            print(f"   {status} {result['test']}: {result['message']}")
+        
+        if failed_tests > 0:
+            print("\n🔍 FAILED TESTS DETAILS:")
+            for result in priority_d_tests:
+                if not result["success"]:
+                    print(f"   ❌ {result['test']}")
+                    print(f"      Error: {result['message']}")
+                    if result.get("details"):
+                        print(f"      Details: {result['details']}")
+        
+        print("\n" + "=" * 80)
+        if passed_tests == total_tests:
+            print("🎉 ALL PRIORITY D BULK IMPORT ENDPOINTS WORKING PERFECTLY!")
+        else:
+            print("⚠️  SOME PRIORITY D TESTS FAILED - CHECK DETAILS ABOVE")
+        print("=" * 80)
 
 if __name__ == "__main__":
     tester = BackendTester()
