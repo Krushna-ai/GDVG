@@ -244,6 +244,9 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
   const confirmImport = async () => {
     if (!selectedFile && !googleSheetUrl) return;
     setUploading(true);
+    setImportResult(null);
+    setJobProgress(null);
+    
     try {
       let result;
       if (googleSheetUrl) {
@@ -251,10 +254,31 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
       } else {
         result = await uploadFileToServer(selectedFile);
       }
-      setImportResult(result);
       setConfirmOpen(false);
       setPreviewData(null);
-      if (result.success && onImportComplete) onImportComplete();
+      
+      // Start polling for job progress
+      // The backend returns BulkImportResult immediately, but we need to fetch jobs to get the job_id
+      // Since the import just completed, the most recent job should be ours
+      setTimeout(async () => {
+        try {
+          const token = localStorage.getItem('admin_token');
+          const jobsResponse = await axios.get(`${API}/admin/bulk-import/jobs?page=1&limit=1`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (jobsResponse.data.jobs && jobsResponse.data.jobs.length > 0) {
+            const latestJob = jobsResponse.data.jobs[0];
+            setCurrentJobId(latestJob.id);
+            setJobProgress(latestJob);
+          }
+        } catch (error) {
+          console.error('Failed to fetch latest job:', error);
+          // Fallback to showing immediate result
+          setImportResult(result);
+          setUploading(false);
+        }
+      }, 500);
+      
     } catch (error) {
       console.error('Upload error:', error);
       setImportResult({
@@ -265,7 +289,6 @@ const BulkImport = ({ darkTheme, onImportComplete }) => {
         errors: [error.response?.data?.detail || 'Upload failed'],
         imported_content: []
       });
-    } finally {
       setUploading(false);
     }
   };
