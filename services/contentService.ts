@@ -1,0 +1,401 @@
+/**
+ * Content Service
+ * Unified service for querying content from TMDB-based Supabase schema
+ */
+
+import { supabase } from '../lib/supabase';
+import type { Content, CastMember, CrewMember, Review, Discussion, WatchLink } from '../types';
+
+// ============ Public Queries (status = 'published') ============
+
+/**
+ * Fetch all published content, ordered by popularity
+ */
+export const fetchPublishedContent = async (limit = 50): Promise<Content[]> => {
+    const { data, error } = await supabase
+        .from('content')
+        .select('*')
+        .eq('status', 'published')
+        .order('popularity', { ascending: false })
+        .limit(limit);
+
+    if (error) throw error;
+    return data || [];
+};
+
+/**
+ * Fetch published content by type (K-Drama, Anime, etc.)
+ */
+export const fetchContentByType = async (
+    contentType: string,
+    limit = 20
+): Promise<Content[]> => {
+    const { data, error } = await supabase
+        .from('content')
+        .select('*')
+        .eq('status', 'published')
+        .eq('content_type', contentType)
+        .order('popularity', { ascending: false })
+        .limit(limit);
+
+    if (error) throw error;
+    return data || [];
+};
+
+/**
+ * Fetch published content by origin country
+ */
+export const fetchContentByCountry = async (
+    countryCode: string,
+    limit = 20
+): Promise<Content[]> => {
+    const { data, error } = await supabase
+        .from('content')
+        .select('*')
+        .eq('status', 'published')
+        .contains('origin_country', [countryCode])
+        .order('popularity', { ascending: false })
+        .limit(limit);
+
+    if (error) throw error;
+    return data || [];
+};
+
+/**
+ * Fetch single content by ID (published only for public)
+ */
+export const fetchContentById = async (id: string): Promise<Content | null> => {
+    const { data, error } = await supabase
+        .from('content')
+        .select('*')
+        .eq('id', id)
+        .eq('status', 'published')
+        .single();
+
+    if (error) return null;
+    return data;
+};
+
+/**
+ * Fetch content by slug (title with underscores) - for URL routing
+ */
+export const fetchContentBySlug = async (slug: string): Promise<Content | null> => {
+    const title = slug.replace(/_/g, ' ');
+
+    const { data, error } = await supabase
+        .from('content')
+        .select('*')
+        .eq('status', 'published')
+        .ilike('title', title)
+        .single();
+
+    if (error) return null;
+    return data;
+};
+
+/**
+ * Search published content by title
+ */
+export const searchContent = async (query: string, limit = 10): Promise<Content[]> => {
+    const { data, error } = await supabase
+        .from('content')
+        .select('id, title, poster_path, content_type, vote_average, origin_country')
+        .eq('status', 'published')
+        .ilike('title', `%${query}%`)
+        .limit(limit);
+
+    if (error) return [];
+    return (data || []) as unknown as Content[];
+};
+
+/**
+ * Fetch similar content by genre
+ */
+export const fetchSimilarContent = async (
+    contentId: string,
+    genres: { id: number; name: string }[] | undefined,
+    limit = 10
+): Promise<Content[]> => {
+    if (!genres || genres.length === 0) return [];
+
+    const genreName = genres[0].name;
+
+    const { data, error } = await supabase
+        .from('content')
+        .select('*')
+        .eq('status', 'published')
+        .neq('id', contentId)
+        .order('popularity', { ascending: false })
+        .limit(limit);
+
+    if (error) return [];
+
+    // Filter by genre in JS since JSONB containment is tricky
+    return (data || []).filter(item =>
+        item.genres?.some((g: any) => g.name === genreName)
+    );
+};
+
+// ============ Cast & Crew Queries ============
+
+/**
+ * Fetch cast for a content item with person details
+ */
+export const fetchContentCast = async (contentId: string): Promise<CastMember[]> => {
+    const { data, error } = await supabase
+        .from('content_cast')
+        .select(`
+      id,
+      content_id,
+      person_id,
+      character_name,
+      order_index,
+      role_type,
+      person:person_id (id, tmdb_id, name, profile_path, known_for_department)
+    `)
+        .eq('content_id', contentId)
+        .order('order_index', { ascending: true });
+
+    if (error) return [];
+
+    // Supabase returns joined data as arrays or objects depending on relationship
+    // We cast to any to avoid strict type mismatches with the defined interfaces
+    return (data || []).map((item: any) => ({
+        ...item,
+        person: Array.isArray(item.person) ? item.person[0] : item.person
+    })) as unknown as CastMember[];
+};
+
+/**
+ * Fetch crew for a content item with person details
+ */
+export const fetchContentCrew = async (contentId: string): Promise<CrewMember[]> => {
+    const { data, error } = await supabase
+        .from('content_crew')
+        .select(`
+      id,
+      content_id,
+      person_id,
+      job,
+      department,
+      person:person_id (id, tmdb_id, name, profile_path)
+    `)
+        .eq('content_id', contentId);
+
+    if (error) return [];
+
+    return (data || []).map((item: any) => ({
+        ...item,
+        person: Array.isArray(item.person) ? item.person[0] : item.person
+    })) as unknown as CrewMember[];
+};
+
+// ============ Admin Queries (all statuses) ============
+
+/**
+ * Fetch all content (admin use)
+ */
+export const fetchAllContent = async (): Promise<Content[]> => {
+    const { data, error } = await supabase
+        .from('content')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+};
+
+/**
+ * Add new content (admin use)
+ */
+export const addContent = async (content: Partial<Content>): Promise<Content> => {
+    const { data, error } = await supabase
+        .from('content')
+        .insert(content)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+};
+
+/**
+ * Update content (admin use)
+ */
+export const updateContent = async (id: string, content: Partial<Content>): Promise<Content> => {
+    const { data, error } = await supabase
+        .from('content')
+        .update({ ...content, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
+};
+
+/**
+ * Delete content (admin use)
+ */
+export const deleteContent = async (id: string): Promise<void> => {
+    const { error } = await supabase.from('content').delete().eq('id', id);
+    if (error) throw error;
+};
+
+// ============ Utility Functions ============
+
+/**
+ * Get top rated published content
+ */
+export const fetchTopRated = async (limit = 10): Promise<Content[]> => {
+    const { data, error } = await supabase
+        .from('content')
+        .select('*')
+        .eq('status', 'published')
+        .order('vote_average', { ascending: false })
+        .limit(limit);
+
+    if (error) return [];
+    return data || [];
+};
+
+/**
+ * Get recently added published content
+ */
+export const fetchRecentlyAdded = async (limit = 10): Promise<Content[]> => {
+    const { data, error } = await supabase
+        .from('content')
+        .select('*')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+    if (error) return [];
+    return data || [];
+};
+
+// ============ Reviews & Discussions ============
+
+export const fetchReviews = async (contentId: string): Promise<Review[]> => {
+    const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('drama_id', contentId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching reviews:', error);
+        return [];
+    }
+
+    return (data || []).map((row: any) => ({
+        id: String(row.id),
+        dramaId: String(row.drama_id),
+        userId: row.user_id,
+        userEmail: row.user_email,
+        rating: row.rating,
+        comment: row.comment,
+        createdAt: row.created_at
+    }));
+};
+
+export const addReview = async (review: { dramaId: string, userId: string, userEmail: string, rating: number, comment: string }): Promise<Review> => {
+    const { data, error } = await supabase
+        .from('reviews')
+        .insert({
+            drama_id: review.dramaId,
+            user_id: review.userId,
+            user_email: review.userEmail,
+            rating: review.rating,
+            comment: review.comment
+        })
+        .select()
+        .single();
+
+    if (error) throw error;
+
+    return {
+        id: String(data.id),
+        dramaId: String(data.drama_id),
+        userId: data.user_id,
+        userEmail: data.user_email,
+        rating: data.rating,
+        comment: data.comment,
+        createdAt: data.created_at
+    };
+};
+
+export const fetchDiscussions = async (contentId: string): Promise<Discussion[]> => {
+    const { data, error } = await supabase
+        .from('discussions')
+        .select('*')
+        .eq('drama_id', contentId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching discussions:', error);
+        return [];
+    }
+
+    return (data || []).map((row: any) => ({
+        id: String(row.id),
+        dramaId: String(row.drama_id),
+        userId: row.user_id,
+        title: row.title,
+        body: row.body,
+        createdAt: row.created_at
+    }));
+};
+
+export const createDiscussion = async (discussion: { dramaId: string, userId: string, title: string, body: string }): Promise<Discussion> => {
+    const { data, error } = await supabase
+        .from('discussions')
+        .insert({
+            drama_id: discussion.dramaId,
+            user_id: discussion.userId,
+            title: discussion.title,
+            body: discussion.body
+        })
+        .select()
+        .single();
+
+    if (error) throw error;
+
+    return {
+        id: String(data.id),
+        dramaId: String(data.drama_id),
+        userId: data.user_id,
+        title: data.title,
+        body: data.body,
+        createdAt: data.created_at
+    };
+};
+
+// ============ Watch Links Queries ============
+
+/**
+ * Fetch streaming/watch links for a content item
+ */
+export const fetchWatchLinks = async (contentId: string): Promise<WatchLink[]> => {
+    const { data, error } = await supabase
+        .from('content_watch_links')
+        .select('*')
+        .eq('content_id', contentId)
+        .order('priority', { ascending: true });
+
+    if (error) {
+        console.warn('Failed to fetch watch links:', error.message);
+        return [];
+    }
+
+    return (data || []).map((item: any) => ({
+        id: String(item.id),
+        content_id: item.content_id,
+        platform_name: item.platform_name,
+        region: item.region,
+        link_url: item.link_url,
+        is_affiliate: item.is_affiliate || false,
+        logo_url: item.logo_url,
+        priority: item.priority
+    }));
+};
