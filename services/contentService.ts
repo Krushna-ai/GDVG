@@ -11,13 +11,12 @@ import type { Content, CastMember, CrewMember, Review, Discussion, WatchLink } f
 /**
  * Fetch all published content, ordered by popularity
  */
-export const fetchPublishedContent = async (limit = 50): Promise<Content[]> => {
+export const fetchPublishedContent = async (): Promise<Content[]> => {
     const { data, error } = await supabase
         .from('content')
         .select('*')
         .eq('status', 'published')
-        .order('popularity', { ascending: false })
-        .limit(limit);
+        .order('popularity', { ascending: false });
 
     if (error) throw error;
     return data || [];
