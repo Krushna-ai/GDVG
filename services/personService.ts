@@ -9,14 +9,15 @@ import type { Person, Content } from '../types';
 // ============ Public Queries ============
 
 /**
- * Fetch all people, ordered by popularity
+ * Fetch all people with profile images, ordered by popularity
+ * Filters out people without images to ensure quality profiles
  */
-export const fetchAllPeople = async (limit = 50): Promise<Person[]> => {
+export const fetchAllPeople = async (): Promise<Person[]> => {
     const { data, error } = await supabase
         .from('people')
         .select('*')
-        .order('popularity', { ascending: false })
-        .limit(limit);
+        .not('profile_path', 'is', null)  // Only show people with images
+        .order('popularity', { ascending: false, nullsFirst: false });
 
     if (error) throw error;
     return data || [];
