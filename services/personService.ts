@@ -9,18 +9,39 @@ import type { Person, Content } from '../types';
 // ============ Public Queries ============
 
 /**
- * Fetch all people with profile images, ordered by popularity
- * Filters out people without images to ensure quality profiles
+ * Fetch people with profile images, ordered by popularity
+ * Supports pagination for performance optimization
+ * @param page - Page number (1-indexed)
+ * @param pageSize - Number of items per page
+ * @returns Object containing people array and total count
  */
-export const fetchAllPeople = async (): Promise<Person[]> => {
+export const fetchAllPeople = async (
+    page: number = 1,
+    pageSize: number = 200
+): Promise<{ people: Person[], total: number }> => {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    // Get total count efficiently
+    const { count } = await supabase
+        .from('people')
+        .select('*', { count: 'exact', head: true })
+        .not('profile_path', 'is', null);
+
+    // Get paginated data
     const { data, error } = await supabase
         .from('people')
         .select('*')
-        .not('profile_path', 'is', null)  // Only show people with images
-        .order('popularity', { ascending: false, nullsFirst: false });
+        .not('profile_path', 'is', null)
+        .order('popularity', { ascending: false, nullsFirst: false })
+        .range(from, to);
 
     if (error) throw error;
-    return data || [];
+
+    return {
+        people: data || [],
+        total: count || 0
+    };
 };
 
 /**
