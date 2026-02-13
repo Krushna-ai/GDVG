@@ -12,7 +12,10 @@ import DramaCard from './DramaCard';
 import AdBanner from './AdBanner';
 import TrackModal from './TrackModal';
 import SEOHead from './SEO/SEOHead';
-import { getPosterUrl, getBackdropUrl, getProfileUrl, PLACEHOLDER_POSTER, PLACEHOLDER_PROFILE } from '../lib/tmdbImages';
+import { getPosterUrl, getBackdropUrl, getProfileUrl, getLogoUrl, PLACEHOLDER_POSTER, PLACEHOLDER_PROFILE } from '../lib/tmdbImages';
+import { getTmdbContentUrl, getImdbUrl, getWikipediaUrl } from '../lib/externalLinks';
+import ImageGallery from './ImageGallery';
+import WatchProvidersRegional from './WatchProvidersRegional';
 
 interface DramaDetailProps {
     drama?: Content;
@@ -364,6 +367,8 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                         </div>
                     </div>
                 );
+            case 'photos':
+                return <ImageGallery images={drama.images || {}} type="content" />;
             case 'reviews':
                 return <ReviewSection dramaId={drama.id} session={session} onOpenAuth={onOpenAuth} />;
             case 'discussions':
@@ -403,13 +408,45 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                         <h2 className="text-2xl text-gray-400 font-light mb-4">{drama.original_title}</h2>
                     )}
 
-                    <div className="flex items-center space-x-4 mb-6">
+                    {/* Tagline */}
+                    {drama.tagline && (
+                        <p className="text-lg md:text-xl text-gray-300 italic mb-4 font-light">"{drama.tagline}"</p>
+                    )}
+
+                    <div className="flex items-center flex-wrap gap-3 mb-6">
+                        {/* Rating Score */}
                         <div className="flex items-center space-x-1 bg-yellow-500/20 border border-yellow-500/50 px-2 py-1 rounded text-yellow-400 font-bold text-sm">
                             <StarIcon filled /> <span>{stats.score.toFixed(1)}</span>
                         </div>
+
+                        {/* Year */}
                         <span className="text-gray-300">{getYear(drama)}</span>
-                        <span className="border border-gray-500 px-2 rounded text-xs">{drama.content_type?.toUpperCase()}</span>
-                        <span className="bg-gray-800 text-gray-300 px-2 py-0.5 rounded text-xs">{drama.tmdb_status || 'Unknown'}</span>
+
+                        {/* Content Type */}
+                        <span className="border border-gray-500 px-2 py-1 rounded text-xs font-semibold">
+                            {drama.content_type?.toUpperCase()}
+                        </span>
+
+                        {/* Content Rating (Age Rating) */}
+                        {drama.content_rating && (
+                            <span className="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold">
+                                {drama.content_rating}
+                            </span>
+                        )}
+
+                        {/* Status Badge - Enhanced */}
+                        {drama.tmdb_status && (
+                            <span className={`px-2 py-1 rounded text-xs font-semibold ${drama.tmdb_status.toLowerCase().includes('returning') || drama.tmdb_status.toLowerCase().includes('production')
+                                ? 'bg-green-600 text-white'
+                                : drama.tmdb_status.toLowerCase().includes('ended')
+                                    ? 'bg-gray-600 text-white'
+                                    : drama.tmdb_status.toLowerCase().includes('canceled')
+                                        ? 'bg-orange-600 text-white'
+                                        : 'bg-gray-700 text-gray-300'
+                                }`}>
+                                {drama.tmdb_status}
+                            </span>
+                        )}
                     </div>
 
                     <div className="flex items-center space-x-4">
@@ -462,7 +499,7 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                     <div className="lg:col-span-2">
                         <div className="flex border-b border-gray-800 mb-8 overflow-x-auto no-scrollbar">
-                            {['overview', 'cast', 'reviews', 'discussions'].map((tab) => (
+                            {['overview', 'cast', 'photos', 'reviews', 'discussions'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab as any)}
@@ -536,6 +573,123 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                                 <li className="flex justify-between border-b border-gray-800 pb-2"><span className="text-gray-500">Network</span><span className="text-white">{getNetworkName(drama)}</span></li>
                                 <li className="flex justify-between border-b border-gray-800 pb-2"><span className="text-gray-500">Runtime</span><span className="text-white">{drama.runtime ? `${drama.runtime} min` : 'N/A'}</span></li>
                             </ul>
+
+                            {/* External References */}
+                            {(drama.tmdb_id || drama.imdb_id || drama.wikipedia_url) && (
+                                <div className="mt-6">
+                                    <h4 className="text-gray-500 font-bold text-xs uppercase mb-3">External Links</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {drama.tmdb_id && (
+                                            <a
+                                                href={getTmdbContentUrl(drama.content_type as 'tv' | 'movie', drama.tmdb_id)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 bg-[#01b4e4] hover:bg-[#0199c7] text-white px-3 py-2 rounded text-xs font-semibold transition"
+                                            >
+                                                <span>🎬</span> TMDB
+                                            </a>
+                                        )}
+                                        {drama.imdb_id && (
+                                            <a
+                                                href={getImdbUrl(drama.imdb_id)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 bg-[#f5c518] hover:bg-[#e0b00f] text-black px-3 py-2 rounded text-xs font-semibold transition"
+                                            >
+                                                <span>⭐</span> IMDB
+                                            </a>
+                                        )}
+                                        {drama.wikipedia_url && (
+                                            <a
+                                                href={getWikipediaUrl(drama.wikipedia_url)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded text-xs font-semibold transition"
+                                            >
+                                                <span>📖</span> Wikipedia
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Production Companies */}
+                            {Array.isArray(drama.production_companies) && drama.production_companies.length > 0 && (
+                                <div className="mt-6">
+                                    <h4 className="text-gray-500 font-bold text-xs uppercase mb-3">Produced By</h4>
+                                    <div className="space-y-3">
+                                        {drama.production_companies.map((company: any) => (
+                                            <div key={company.id} className="flex items-center gap-3">
+                                                {company.logo_path ? (
+                                                    <img
+                                                        src={getLogoUrl(company.logo_path, 'w92') || ''}
+                                                        alt={company.name}
+                                                        className="h-8 w-auto object-contain bg-white/10 rounded px-2 py-1"
+                                                    />
+                                                ) : (
+                                                    <div className="h-8 w-12 bg-gray-800 rounded flex items-center justify-center">
+                                                        <span className="text-xs">🏢</span>
+                                                    </div>
+                                                )}
+                                                <div className="flex-1">
+                                                    <p className="text-sm text-white font-medium">{company.name}</p>
+                                                    {company.origin_country && (
+                                                        <p className="text-xs text-gray-500">{company.origin_country}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Languages */}
+                            {Array.isArray(drama.spoken_languages) && drama.spoken_languages.length > 0 && (
+                                <div className="mb-3">
+                                    <span className="block text-gray-500 text-xs uppercase mb-2">Languages</span>
+                                    <div className="flex flex-wrap gap-2">
+                                        {drama.spoken_languages.map((lang: any) => (
+                                            <span key={lang.iso_639_1} className="text-xs bg-blue-700 text-white px-2 py-1 rounded">
+                                                {lang.english_name || lang.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Production Countries */}
+                            {Array.isArray(drama.production_countries) && drama.production_countries.length > 0 && (
+                                <div className="mb-3">
+                                    <span className="block text-gray-500 text-xs uppercase mb-2">Production Countries</span>
+                                    <div className="flex flex-wrap gap-2">
+                                        {drama.production_countries.map((country: any) => (
+                                            <span key={country.iso_3166_1} className="text-xs bg-gray-700 text-white px-2 py-1 rounded">
+                                                {country.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Alternative Titles */}
+                            {Array.isArray(drama.alternative_titles) && drama.alternative_titles.length > 0 && (
+                                <div className="mt-6">
+                                    <h4 className="text-gray-400 font-bold text-xs uppercase mb-3">Also Known As</h4>
+                                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                                        {drama.alternative_titles.map((alt: any, i: number) => (
+                                            <div key={i} className="flex items-start gap-2">
+                                                <span className="text-sm text-gray-300 flex-1">{alt.title}</span>
+                                                {alt.iso_3166_1 && (
+                                                    <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded">
+                                                        {altiso_3166_1}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="mt-6">
                                 <h4 className="text-gray-500 font-bold text-xs uppercase mb-2">Genres</h4>
                                 <div className="flex flex-wrap gap-2">
