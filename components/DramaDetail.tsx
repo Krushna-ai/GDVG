@@ -296,6 +296,14 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                             </div>
                         )}
 
+                        {/* Regional Watch Providers */}
+                        {drama.watch_providers && (
+                            <div className="mb-8">
+                                <h3 className="text-xl font-bold text-white mb-3 border-l-4 border-red-600 pl-3">Streaming Availability</h3>
+                                <WatchProvidersRegional watchProviders={drama.watch_providers} />
+                            </div>
+                        )}
+
                         <AdBanner className="w-full h-24 rounded-lg" />
 
                         {/* Main Cast */}
@@ -681,7 +689,7 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                                                 <span className="text-sm text-gray-300 flex-1">{alt.title}</span>
                                                 {alt.iso_3166_1 && (
                                                     <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded">
-                                                        {altiso_3166_1}
+                                                        {alt.iso_3166_1}
                                                     </span>
                                                 )}
                                             </div>
