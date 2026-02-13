@@ -42,13 +42,16 @@ const getCountry = (content: Content | null) => {
 
 // Helper: Get genres as string array for display
 const getGenreNames = (content: Content | null): string[] => {
-    if (!content?.genres) return [];
+    if (!content) return [];
+    if (!Array.isArray(content.genres)) return [];
     return content.genres.map(g => g.name);
 };
 
 // Helper: Get network name
 const getNetworkName = (content: Content | null): string => {
-    return content?.networks?.[0]?.name || 'N/A';
+    if (!content) return 'N/A';
+    if (!Array.isArray(content.networks) || content.networks.length === 0) return 'N/A';
+    return content.networks[0].name;
 };
 
 const DramaDetail: React.FC<DramaDetailProps> = ({
@@ -134,7 +137,7 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
             setCrewMembers(crew);
 
             // Load similar content
-            if (drama.genres && drama.genres.length > 0) {
+            if (Array.isArray(drama.genres) && drama.genres.length > 0) {
                 const similar = await fetchSimilarContent(drama.id, drama.genres);
                 setSimilarContent(similar);
             }
@@ -195,13 +198,14 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                     ? castMembers.filter(c => c.role_type === 'main')
                     : castMembers.slice(0, 8);
 
-                // Get trailers from videos array
-                const trailers = drama.videos?.filter(v =>
-                    v.type === 'Trailer' && v.site === 'YouTube'
-                ) || [];
+                // Get trailers from videos array - with defensive check
+                const trailers = (Array.isArray(drama.videos) ? drama.videos : [])
+                    .filter(v =>
+                        v.type === 'Trailer' && v.site === 'YouTube'
+                    );
 
-                // Get keywords
-                const keywords = drama.keywords || [];
+                // Get keywords - with defensive check
+                const keywords = Array.isArray(drama.keywords) ? drama.keywords : [];
 
                 return (
                     <div className="space-y-8 animate-fadeIn">

@@ -5,6 +5,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { Content, CastMember, CrewMember, Review, Discussion, WatchLink } from '../types';
+import { normalizeContent, normalizeContentArray } from '../lib/contentNormalizer';
 
 // ============ Public Queries (status = 'published') ============
 
@@ -19,7 +20,7 @@ export const fetchPublishedContent = async (): Promise<Content[]> => {
         .order('popularity', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return normalizeContentArray(data || []);
 };
 
 /**
@@ -38,7 +39,7 @@ export const fetchContentByType = async (
         .limit(limit);
 
     if (error) throw error;
-    return data || [];
+    return normalizeContentArray(data || []);
 };
 
 /**
@@ -57,7 +58,7 @@ export const fetchContentByCountry = async (
         .limit(limit);
 
     if (error) throw error;
-    return data || [];
+    return normalizeContentArray(data || []);
 };
 
 /**
@@ -72,7 +73,7 @@ export const fetchContentById = async (id: string): Promise<Content | null> => {
         .single();
 
     if (error) return null;
-    return data;
+    return data ? normalizeContent(data) : null;
 };
 
 /**
@@ -89,7 +90,7 @@ export const fetchContentBySlug = async (slug: string): Promise<Content | null> 
         .single();
 
     if (error) return null;
-    return data;
+    return data ? normalizeContent(data) : null;
 };
 
 /**
@@ -104,7 +105,7 @@ export const searchContent = async (query: string, limit = 10): Promise<Content[
         .limit(limit);
 
     if (error) return [];
-    return (data || []) as unknown as Content[];
+    return normalizeContentArray((data || []) as unknown as Content[]);
 };
 
 /**
@@ -130,8 +131,9 @@ export const fetchSimilarContent = async (
     if (error) return [];
 
     // Filter by genre in JS since JSONB containment is tricky
-    return (data || []).filter(item =>
-        item.genres?.some((g: any) => g.name === genreName)
+    const normalized = normalizeContentArray(data || []);
+    return normalized.filter(item =>
+        item.genres.some((g: any) => g.name === genreName)
     );
 };
 
@@ -201,7 +203,7 @@ export const fetchAllContent = async (): Promise<Content[]> => {
         .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return normalizeContentArray(data || []);
 };
 
 /**
@@ -215,7 +217,7 @@ export const addContent = async (content: Partial<Content>): Promise<Content> =>
         .single();
 
     if (error) throw error;
-    return data;
+    return normalizeContent(data);
 };
 
 /**
@@ -230,7 +232,7 @@ export const updateContent = async (id: string, content: Partial<Content>): Prom
         .single();
 
     if (error) throw error;
-    return data;
+    return normalizeContent(data);
 };
 
 /**
@@ -255,7 +257,7 @@ export const fetchTopRated = async (limit = 10): Promise<Content[]> => {
         .limit(limit);
 
     if (error) return [];
-    return data || [];
+    return normalizeContentArray(data || []);
 };
 
 /**
@@ -270,7 +272,7 @@ export const fetchRecentlyAdded = async (limit = 10): Promise<Content[]> => {
         .limit(limit);
 
     if (error) return [];
-    return data || [];
+    return normalizeContentArray(data || []);
 };
 
 // ============ Reviews & Discussions ============

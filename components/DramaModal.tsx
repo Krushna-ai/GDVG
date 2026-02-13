@@ -50,8 +50,9 @@ const DramaModal: React.FC<DramaModalProps> = ({
       ? getPosterUrl(drama.poster_path, 'original')
       : PLACEHOLDER_BACKDROP;
 
-  // Genre names
-  const genreNames = drama.genres?.map(g => g.name) || [];
+  // Genre names - with defensive check
+  const genreNames = (Array.isArray(drama.genres) ? drama.genres : [])
+    .map(g => g.name);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 overflow-y-auto">
@@ -115,7 +116,7 @@ const DramaModal: React.FC<DramaModalProps> = ({
             </p>
 
             {/* Networks as platforms */}
-            {drama.networks && drama.networks.length > 0 && (
+            {Array.isArray(drama.networks) && drama.networks.length > 0 && (
               <div>
                 <h4 className="font-bold text-gray-400 mb-2">Available on:</h4>
                 <div className="flex flex-wrap gap-2">

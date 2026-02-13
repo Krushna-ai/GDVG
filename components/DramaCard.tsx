@@ -14,8 +14,10 @@ const DramaCard: React.FC<DramaCardProps> = ({ drama, onClick }) => {
     ? getPosterUrl(drama.poster_path, 'w342')
     : PLACEHOLDER_POSTER;
 
-  // Extract genre names from genre objects
-  const genreNames = drama.genres?.slice(0, 2).map(g => g.name) || [];
+  // Extract genre names from genre objects - with defensive check
+  const genreNames = (Array.isArray(drama.genres) ? drama.genres : [])
+    .slice(0, 2)
+    .map(g => g.name);
 
   return (
     <div
