@@ -41,25 +41,23 @@ export function getContentTypeFromPrefix(prefix: string): string {
  * Examples:
  *   /series/736993/breaking-bad
  *   /movies/123456/inception
- * Uses GDVG-ID (6-digit auto-incrementing number)
+ * REQUIRES gdvg_id - throws error if missing
  */
 export function getContentUrl(content: Content): string {
-    const prefix = getContentTypePrefix(content.content_type);
-    const title = content.title || content.name || '';
-
-    // Create slug from title
-    const slug = createSlug(title);
-
-    // Use GDVG-ID (fallback to UUID short ID if not available yet)
-    const id = content.gdvg_id || content.id.substring(0, 8);
-
-    // Combine: /[type]/[gdvg-id]/[slug]
-    if (slug) {
-        return `/${prefix}/${id}/${slug}`;
+    if (!content.gdvg_id) {
+        console.error('Content missing gdvg_id:', content.id, content.title);
+        throw new Error(`Content "${content.title}" is missing gdvg_id`);
     }
 
-    // Fallback to just ID if no title
-    return `/${prefix}/${id}`;
+    const prefix = getContentTypePrefix(content.content_type);
+    const title = content.title || '';
+    const slug = createSlug(title);
+
+    if (slug) {
+        return `/${prefix}/${content.gdvg_id}/${slug}`;
+    }
+
+    return `/${prefix}/${content.gdvg_id}`;
 }
 
 /**
