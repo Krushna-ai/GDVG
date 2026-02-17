@@ -258,10 +258,14 @@ export const fetchContentCast = async (contentId: string, limit = 20): Promise<C
 
     // Supabase returns joined data as arrays or objects depending on relationship
     // We cast to any to avoid strict type mismatches with the defined interfaces
-    const result = (data || []).map((item: any) => ({
-        ...item,
-        person: Array.isArray(item.people) ? item.people[0] : item.people
-    })) as unknown as CastMember[];
+    const result = (data || []).map((item: any) => {
+        // Defensive check for the joined relation key (could be 'people' or 'person' depending on PostgREST version/config)
+        const rawPerson = item.people || item.person;
+        return {
+            ...item,
+            person: Array.isArray(rawPerson) ? rawPerson[0] : rawPerson
+        };
+    }) as unknown as CastMember[];
 
     // DEBUG: Check if gdvg_id is present
     console.log('fetchContentCast result:', result.slice(0, 2).map(c => ({
@@ -293,10 +297,13 @@ export const fetchContentCrew = async (contentId: string, limit = 20): Promise<C
 
     if (error) return [];
 
-    return (data || []).map((item: any) => ({
-        ...item,
-        person: Array.isArray(item.people) ? item.people[0] : item.people
-    })) as unknown as CrewMember[];
+    return (data || []).map((item: any) => {
+        const rawPerson = item.people || item.person;
+        return {
+            ...item,
+            person: Array.isArray(rawPerson) ? rawPerson[0] : rawPerson
+        };
+    }) as unknown as CrewMember[];
 };
 
 // ============ Admin Queries (all statuses) ============
