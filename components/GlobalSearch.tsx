@@ -10,7 +10,7 @@ interface GlobalSearchProps {
   isOpen: boolean;
   onClose: () => void;
   onDramaClick: (content: Content) => void;
-  onPersonClick: (name: string) => void;
+  onPersonClick: (person: Person) => void;
 }
 
 const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, onDramaClick, onPersonClick }) => {
@@ -67,7 +67,7 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, onDramaCli
   };
 
   const handlePersonSelect = (person: Person) => {
-    onPersonClick(person.name);
+    onPersonClick(person);
     onClose();
   };
 

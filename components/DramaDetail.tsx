@@ -26,7 +26,7 @@ interface DramaDetailProps {
     onToggleMyList?: (id: string) => void;
     session: Session | null;
     onOpenAuth: () => void;
-    onPersonClick?: (name: string) => void;
+    onPersonClick?: (person: Person) => void;
     onGenreClick?: (genre: string) => void;
     onDramaClick?: (drama: Content) => void;
     onRefreshList?: () => void;
@@ -87,7 +87,7 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
 
     // Fallback handlers if props are missing (Routing Mode)
     const handleBack = onBack || (() => navigate(-1));
-    const handlePerson = onPersonClick || ((name) => navigate(`/person/${encodeURIComponent(name)}`));
+    const handlePerson = onPersonClick || ((person: Person) => navigate(getPersonUrl(person)));
     const handleGenre = onGenreClick || ((genre) => navigate(`/browse/series?genre=${encodeURIComponent(genre)}`));
     const handleDrama = onDramaClick || ((d) => navigate(getContentUrl(d)));
 

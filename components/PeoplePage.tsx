@@ -6,7 +6,7 @@ import { ChevronDownIcon } from './icons';
 import { getProfileUrl, PLACEHOLDER_PROFILE } from '../lib/tmdbImages';
 
 interface PeoplePageProps {
-  onPersonClick: (name: string) => void;
+  onPersonClick: (person: Person) => void;
 }
 
 const PeoplePage: React.FC<PeoplePageProps> = ({ onPersonClick }) => {
@@ -130,7 +130,7 @@ const PeoplePage: React.FC<PeoplePageProps> = ({ onPersonClick }) => {
                 <div
                   key={person.id}
                   className="group cursor-pointer"
-                  onClick={() => onPersonClick(person.name)}
+                  onClick={() => onPersonClick(person)}
                 >
                   <div className="rounded-lg overflow-hidden border-2 border-transparent group-hover:border-red-600 transition duration-300 relative aspect-[2/3]">
                     <img
