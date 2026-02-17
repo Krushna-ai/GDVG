@@ -76,16 +76,21 @@ export function createSlug(title: string): string {
 /**
  * Generate URL for person pages
  * Example: /people/123456/bryan-cranston
+ * REQUIRES gdvg_id - throws error if missing
  */
 export function getPersonUrl(person: Person): string {
-    const slug = createSlug(person.name);
-    const id = person.gdvg_id || person.id.substring(0, 8);
-
-    if (slug) {
-        return `/people/${id}/${slug}`;
+    if (!person.gdvg_id) {
+        console.error('Person missing gdvg_id:', person.id, person.name);
+        throw new Error(`Person "${person.name}" is missing gdvg_id. Ensure gdvg_id is selected in database query.`);
     }
 
-    return `/people/${id}`;
+    const slug = createSlug(person.name);
+
+    if (slug) {
+        return `/people/${person.gdvg_id}/${slug}`;
+    }
+
+    return `/people/${person.gdvg_id}`;
 }
 
 /**
