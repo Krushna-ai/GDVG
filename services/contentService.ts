@@ -267,13 +267,6 @@ export const fetchContentCast = async (contentId: string, limit = 20): Promise<C
         };
     }) as unknown as CastMember[];
 
-    // DEBUG: Check if gdvg_id is present
-    console.log('fetchContentCast result:', result.slice(0, 2).map(c => ({
-        name: c.person?.name,
-        gdvg_id: c.person?.gdvg_id,
-        id: c.person?.id
-    })));
-
     return result;
 };
 

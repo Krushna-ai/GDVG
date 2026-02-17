@@ -135,7 +135,6 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
         const loadRelated = async () => {
             // Load cast
             const cast = await fetchContentCast(drama.id);
-            console.log("DramaDetail setCastMembers:", cast);
             setCastMembers(cast);
 
             // Load crew
