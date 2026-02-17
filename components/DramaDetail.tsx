@@ -322,7 +322,7 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                                         <div
                                             key={cast.id}
                                             className="bg-[#141414] rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-red-600 transition"
-                                            onClick={() => handlePerson(cast.person?.name || '')}
+                                            onClick={() => cast.person && handlePerson(cast.person)}
                                         >
                                             <img
                                                 src={getProfileUrl(cast.person?.profile_path) || PLACEHOLDER_PROFILE}
@@ -365,6 +365,7 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                             {castMembers.map(cast => (
                                 <div
                                     key={cast.id}
+                                    className="flex flex-col items-center text-center cursor-pointer group"
                                     onClick={() => cast.person && handlePerson(cast.person)}
                                 >
                                     <div className="w-24 h-24 rounded-full overflow-hidden mb-3 border-2 border-gray-800 group-hover:border-red-600 transition">
@@ -560,7 +561,7 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                                         <span className="text-red-500 font-bold text-xs uppercase">Director</span>
                                         <div className="flex flex-wrap gap-2">
                                             {directors.map((d, i) => (
-                                                <span key={i} className="text-blue-400 hover:underline cursor-pointer" onClick={() => handlePerson(d.person?.name || '')}>
+                                                <span key={i} className="text-blue-400 hover:underline cursor-pointer" onClick={() => d.person && handlePerson(d.person)}>
                                                     {d.person?.name}{i < directors.length - 1 ? ', ' : ''}
                                                 </span>
                                             ))}
@@ -573,7 +574,7 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                                         <span className="text-red-500 font-bold text-xs uppercase">Writer</span>
                                         <div className="flex flex-wrap gap-2">
                                             {writers.map((w, i) => (
-                                                <span key={i} className="text-blue-400 hover:underline cursor-pointer" onClick={() => handlePerson(w.person?.name || '')}>
+                                                <span key={i} className="text-blue-400 hover:underline cursor-pointer" onClick={() => w.person && handlePerson(w.person)}>
                                                     {w.person?.name}{i < writers.length - 1 ? ', ' : ''}
                                                 </span>
                                             ))}
