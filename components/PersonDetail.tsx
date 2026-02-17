@@ -61,7 +61,7 @@ const PersonDetail: React.FC<PersonDetailProps> = ({ person: initialPerson, onBa
         if (onDrama) {
             onDrama(content);
         } else {
-            navigate(`/content/${content.slug || content.id}`);
+            navigate(`/title/${content.id}`);
         }
     };
 
