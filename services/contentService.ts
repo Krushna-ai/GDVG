@@ -248,7 +248,7 @@ export const fetchContentCast = async (contentId: string, limit = 20): Promise<C
       character_name,
       order_index,
       role_type,
-      person:person_id (id, gdvg_id, tmdb_id, name, profile_path, known_for_department)
+      people!person_id (id, gdvg_id, tmdb_id, name, profile_path, known_for_department)
     `)
         .eq('content_id', contentId)
         .order('order_index', { ascending: true })
@@ -286,7 +286,7 @@ export const fetchContentCrew = async (contentId: string, limit = 20): Promise<C
       person_id,
       job,
       department,
-      person:person_id (id, gdvg_id, tmdb_id, name, profile_path)
+      people!person_id (id, gdvg_id, tmdb_id, name, profile_path)
     `)
         .eq('content_id', contentId)
         .limit(limit);
@@ -295,7 +295,7 @@ export const fetchContentCrew = async (contentId: string, limit = 20): Promise<C
 
     return (data || []).map((item: any) => ({
         ...item,
-        person: Array.isArray(item.person) ? item.person[0] : item.person
+        person: Array.isArray(item.people) ? item.people[0] : item.people
     })) as unknown as CrewMember[];
 };
 
