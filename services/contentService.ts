@@ -258,10 +258,19 @@ export const fetchContentCast = async (contentId: string, limit = 20): Promise<C
 
     // Supabase returns joined data as arrays or objects depending on relationship
     // We cast to any to avoid strict type mismatches with the defined interfaces
-    return (data || []).map((item: any) => ({
+    const result = (data || []).map((item: any) => ({
         ...item,
         person: Array.isArray(item.person) ? item.person[0] : item.person
     })) as unknown as CastMember[];
+
+    // DEBUG: Check if gdvg_id is present
+    console.log('fetchContentCast result:', result.slice(0, 2).map(c => ({
+        name: c.person?.name,
+        gdvg_id: c.person?.gdvg_id,
+        id: c.person?.id
+    })));
+
+    return result;
 };
 
 /**
