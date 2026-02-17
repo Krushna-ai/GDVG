@@ -248,7 +248,7 @@ export const fetchContentCast = async (contentId: string, limit = 20): Promise<C
       character_name,
       order_index,
       role_type,
-      person:person_id (id, tmdb_id, name, profile_path, known_for_department)
+      person:person_id (id, gdvg_id, tmdb_id, name, profile_path, known_for_department)
     `)
         .eq('content_id', contentId)
         .order('order_index', { ascending: true })
@@ -277,7 +277,7 @@ export const fetchContentCrew = async (contentId: string, limit = 20): Promise<C
       person_id,
       job,
       department,
-      person:person_id (id, tmdb_id, name, profile_path)
+      person:person_id (id, gdvg_id, tmdb_id, name, profile_path)
     `)
         .eq('content_id', contentId)
         .limit(limit);
