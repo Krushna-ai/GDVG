@@ -115,7 +115,7 @@ export const getPersonByName = async (nameOrId: string): Promise<Person | null> 
 export const searchPeople = async (query: string, limit = 5): Promise<Person[]> => {
     const { data, error } = await supabase
         .from('people')
-        .select('id, tmdb_id, name, profile_path, known_for_department')
+        .select('id, gdvg_id, tmdb_id, name, profile_path, known_for_department')
         .ilike('name', `%${query}%`)
         .order('popularity', { ascending: false })
         .limit(limit);
