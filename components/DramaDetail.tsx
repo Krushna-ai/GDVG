@@ -135,6 +135,7 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
         const loadRelated = async () => {
             // Load cast
             const cast = await fetchContentCast(drama.id);
+            console.log("DramaDetail setCastMembers:", cast);
             setCastMembers(cast);
 
             // Load crew
@@ -364,14 +365,7 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                             {castMembers.map(cast => (
                                 <div
                                     key={cast.id}
-                                    onClick={() => {
-                                        console.log('Cast click:', cast);
-                                        if (cast.person) {
-                                            handlePerson(cast.person);
-                                        } else {
-                                            console.error("Cast member missing person data:", cast);
-                                        }
-                                    }}
+                                    onClick={() => cast.person && handlePerson(cast.person)}
                                 >
                                     <div className="w-24 h-24 rounded-full overflow-hidden mb-3 border-2 border-gray-800 group-hover:border-red-600 transition">
                                         <img
