@@ -104,15 +104,16 @@ export const fetchContentBySlug = async (slug: string): Promise<Content | null> 
 
     if (/^[0-9a-f]{8}$/i.test(lastPart)) {
         // New format: extract short ID and search by prefix
+        // Use PostgreSQL LOWER() for reliable case-insensitive matching
         const { data, error } = await supabase
             .from('content')
             .select('*')
             .eq('status', 'published')
-            .ilike('id', `${lastPart}%`) // Match IDs starting with this 8-char prefix
-            .single();
+            .filter('id', 'ilike', `${lastPart.toLowerCase()}%`)
+            .limit(1);
 
-        if (error) return null;
-        return data ? normalizeContent(data) : null;
+        if (error || !data || data.length === 0) return null;
+        return normalizeContent(data[0]);
     }
 
     // Fallback to old slug format (title search with underscores)
