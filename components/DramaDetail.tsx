@@ -365,7 +365,10 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                                 <div
                                     key={cast.id}
                                     className="flex flex-col items-center text-center cursor-pointer group"
-                                    onClick={() => cast.person && navigate(getPersonUrl(cast.person))}
+                                    onClick={() => {
+                                        console.log('Cast click:', { name: cast.person?.name, gdvg_id: cast.person?.gdvg_id, hasId: !!cast.person?.id });
+                                        if (cast.person) navigate(getPersonUrl(cast.person));
+                                    }}
                                 >
                                     <div className="w-24 h-24 rounded-full overflow-hidden mb-3 border-2 border-gray-800 group-hover:border-red-600 transition">
                                         <img
