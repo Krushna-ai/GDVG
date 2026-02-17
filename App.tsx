@@ -59,7 +59,7 @@ const App: React.FC = () => {
     setIsLoadingContent(true);
     try {
       const [popular, topRated, recent] = await Promise.all([
-        fetchPublishedContent(),
+        fetchPublishedContent(100), // Limit to 100 most popular instead of all 10k+
         fetchTopRated(20),
         fetchRecentlyAdded(20)
       ]);

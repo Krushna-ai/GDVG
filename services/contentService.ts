@@ -12,12 +12,13 @@ import { normalizeContent, normalizeContentArray } from '../lib/contentNormalize
 /**
  * Fetch all published content, ordered by popularity
  */
-export const fetchPublishedContent = async (): Promise<Content[]> => {
+export const fetchPublishedContent = async (limit = 100): Promise<Content[]> => {
     const { data, error } = await supabase
         .from('content')
         .select('*')
         .eq('status', 'published')
-        .order('popularity', { ascending: false });
+        .order('popularity', { ascending: false })
+        .limit(limit);
 
     if (error) throw error;
     return normalizeContentArray(data || []);
