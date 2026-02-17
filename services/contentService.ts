@@ -138,12 +138,49 @@ export const fetchSimilarContent = async (
     );
 };
 
+/**
+ * Fetch TMDB recommendations for content (uses new backend enrichment column)
+ */
+export const fetchRecommendations = async (
+    contentId: string,
+    limit = 10
+): Promise<Content[]> => {
+    // Get the source content with recommendations
+    const { data: source, error: sourceError } = await supabase
+        .from('content')
+        .select('recommendations')
+        .eq('id', contentId)
+        .single();
+
+    if (sourceError || !source?.recommendations) return [];
+
+    // Extract tmdb_ids from recommendations array
+    const tmdbIds = (source.recommendations as any[])
+        .map((r: any) => r.tmdb_id)
+        .filter(Boolean)
+        .slice(0, limit * 2); // Get more IDs in case some aren't published
+
+    if (tmdbIds.length === 0) return [];
+
+    // Fetch full content details for published items
+    const { data, error } = await supabase
+        .from('content')
+        .select('*')
+        .eq('status', 'published')
+        .in('tmdb_id', tmdbIds)
+        .limit(limit);
+
+    if (error) return [];
+    return normalizeContentArray(data || []);
+};
+
 // ============ Cast & Crew Queries ============
 
 /**
  * Fetch cast for a content item with person details
+ * @param limit - Max cast members to fetch (default 20). Backend enrichment will add 50-200+ cast per content.
  */
-export const fetchContentCast = async (contentId: string): Promise<CastMember[]> => {
+export const fetchContentCast = async (contentId: string, limit = 20): Promise<CastMember[]> => {
     const { data, error } = await supabase
         .from('content_cast')
         .select(`
@@ -156,7 +193,8 @@ export const fetchContentCast = async (contentId: string): Promise<CastMember[]>
       person:person_id (id, tmdb_id, name, profile_path, known_for_department)
     `)
         .eq('content_id', contentId)
-        .order('order_index', { ascending: true });
+        .order('order_index', { ascending: true })
+        .limit(limit);
 
     if (error) return [];
 
@@ -170,8 +208,9 @@ export const fetchContentCast = async (contentId: string): Promise<CastMember[]>
 
 /**
  * Fetch crew for a content item with person details
+ * @param limit - Max crew members to fetch (default 20)
  */
-export const fetchContentCrew = async (contentId: string): Promise<CrewMember[]> => {
+export const fetchContentCrew = async (contentId: string, limit = 20): Promise<CrewMember[]> => {
     const { data, error } = await supabase
         .from('content_crew')
         .select(`
@@ -182,7 +221,8 @@ export const fetchContentCrew = async (contentId: string): Promise<CrewMember[]>
       department,
       person:person_id (id, tmdb_id, name, profile_path)
     `)
-        .eq('content_id', contentId);
+        .eq('content_id', contentId)
+        .limit(limit);
 
     if (error) return [];
 

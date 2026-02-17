@@ -6,7 +6,7 @@ import type { Session } from '@supabase/supabase-js';
 import { PlayIcon, PlusIcon, CheckIcon, ArrowLeftIcon, UserCircleIcon, StarIcon } from './icons';
 import ReviewSection from './ReviewSection';
 import DiscussionSection from './DiscussionSection';
-import { fetchContentById, fetchContentBySlug, fetchSimilarContent, fetchContentCast, fetchContentCrew, fetchWatchLinks } from '../services/contentService';
+import { fetchContentById, fetchContentBySlug, fetchSimilarContent, fetchRecommendations, fetchContentCast, fetchContentCrew, fetchWatchLinks } from '../services/contentService';
 import { fetchUserList, updateUserListEntry, removeFromUserList } from '../services/listService';
 import DramaCard from './DramaCard';
 import AdBanner from './AdBanner';
@@ -76,6 +76,7 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
     const [crewMembers, setCrewMembers] = useState<any[]>([]);
     const [watchLinks, setWatchLinks] = useState<WatchLink[]>([]);
     const [similarContent, setSimilarContent] = useState<Content[]>([]);
+    const [recommendations, setRecommendations] = useState<Content[]>([]); // NEW: TMDB recommendations
     const [isShareCopied, setIsShareCopied] = useState(false);
     const [activeTab, setActiveTab] = useState<'overview' | 'cast' | 'reviews' | 'discussions'>('overview');
 
@@ -139,7 +140,11 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
             const crew = await fetchContentCrew(drama.id);
             setCrewMembers(crew);
 
-            // Load similar content
+            // Load TMDB recommendations (NEW: prioritize over genre-based)
+            const recs = await fetchRecommendations(drama.id, 10);
+            setRecommendations(recs);
+
+            // Load similar content as fallback
             if (Array.isArray(drama.genres) && drama.genres.length > 0) {
                 const similar = await fetchSimilarContent(drama.id, drama.genres);
                 setSimilarContent(similar);
@@ -337,12 +342,12 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                             </div>
                         )}
 
-                        {/* Similar Content */}
-                        {similarContent.length > 0 && (
+                        {/* Similar Content - Prioritize TMDB Recommendations */}
+                        {(recommendations.length > 0 || similarContent.length > 0) && (
                             <div>
                                 <h3 className="text-xl font-bold text-white mb-3 border-l-4 border-red-600 pl-3">You May Also Like</h3>
                                 <div className="flex space-x-4 overflow-x-auto pb-6 no-scrollbar">
-                                    {similarContent.map(sim => (
+                                    {(recommendations.length > 0 ? recommendations : similarContent).map(sim => (
                                         <DramaCard key={sim.id} drama={sim} onClick={handleDrama} />
                                     ))}
                                 </div>

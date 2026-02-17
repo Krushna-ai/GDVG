@@ -16,6 +16,8 @@ const PeoplePage: React.FC<PeoplePageProps> = ({ onPersonClick }) => {
   const [totalPeople, setTotalPeople] = useState(0);
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<'popularity' | 'credits'>('popularity'); // NEW: Sort option
+  const [isSortOpen, setIsSortOpen] = useState(false);
 
   const pageSize = 200;
   const totalPages = Math.ceil(totalPeople / pageSize);
@@ -24,7 +26,7 @@ const PeoplePage: React.FC<PeoplePageProps> = ({ onPersonClick }) => {
     const load = async () => {
       setLoading(true);
       try {
-        const { people: data, total } = await fetchAllPeople(currentPage, pageSize);
+        const { people: data, total } = await fetchAllPeople(currentPage, pageSize, sortBy);
         setPeople(data);
         setTotalPeople(total);
       } catch (e) {
@@ -34,7 +36,7 @@ const PeoplePage: React.FC<PeoplePageProps> = ({ onPersonClick }) => {
       }
     };
     load();
-  }, [currentPage]);
+  }, [currentPage, sortBy]); // Re-fetch when sort changes
 
   // Scroll to top when page changes
   useEffect(() => {
@@ -63,22 +65,53 @@ const PeoplePage: React.FC<PeoplePageProps> = ({ onPersonClick }) => {
           </p>
         </div>
 
-        <div className="relative">
-          <button
-            onClick={() => setIsFilterOpen(!isFilterOpen)}
-            className="flex items-center space-x-2 bg-black border border-gray-600 px-4 py-2 rounded hover:bg-gray-900 transition text-sm font-bold text-white"
-          >
-            <span>{roleFilter || 'All Professions'}</span>
-            <ChevronDownIcon />
-          </button>
-          {isFilterOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-black/95 border border-gray-700 rounded shadow-xl z-10">
-              <div onClick={() => { setRoleFilter(null); setIsFilterOpen(false); }} className="px-4 py-2 hover:bg-gray-800 cursor-pointer text-sm text-gray-300">All</div>
-              <div onClick={() => { setRoleFilter('Acting'); setIsFilterOpen(false); }} className="px-4 py-2 hover:bg-gray-800 cursor-pointer text-sm text-gray-300">Actor</div>
-              <div onClick={() => { setRoleFilter('Directing'); setIsFilterOpen(false); }} className="px-4 py-2 hover:bg-gray-800 cursor-pointer text-sm text-gray-300">Director</div>
-              <div onClick={() => { setRoleFilter('Writing'); setIsFilterOpen(false); }} className="px-4 py-2 hover:bg-gray-800 cursor-pointer text-sm text-gray-300">Writer</div>
-            </div>
-          )}
+        {/* Sort and Filter Controls */}
+        <div className="flex items-center space-x-3">
+          {/* Sort By */}
+          <div className="relative">
+            <button
+              onClick={() => setIsSortOpen(!isSortOpen)}
+              className="flex items-center space-x-2 bg-black border border-gray-600 px-4 py-2 rounded hover:bg-gray-900 transition text-sm font-bold text-white"
+            >
+              <span>{sortBy === 'popularity' ? 'Most Popular' : 'Most Prolific'}</span>
+              <ChevronDownIcon />
+            </button>
+            {isSortOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-black/95 border border-gray-700 rounded shadow-xl z-10">
+                <div
+                  onClick={() => { setSortBy('popularity'); setIsSortOpen(false); }}
+                  className="px-4 py-2 hover:bg-gray-800 cursor-pointer text-sm text-gray-300"
+                >
+                  Most Popular
+                </div>
+                <div
+                  onClick={() => { setSortBy('credits'); setIsSortOpen(false); }}
+                  className="px-4 py-2 hover:bg-gray-800 cursor-pointer text-sm text-gray-300"
+                >
+                  Most Prolific
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Role Filter */}
+          <div className="relative">
+            <button
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className="flex items-center space-x-2 bg-black border border-gray-600 px-4 py-2 rounded hover:bg-gray-900 transition text-sm font-bold text-white"
+            >
+              <span>{roleFilter || 'All Professions'}</span>
+              <ChevronDownIcon />
+            </button>
+            {isFilterOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-black/95 border border-gray-700 rounded shadow-xl z-10">
+                <div onClick={() => { setRoleFilter(null); setIsFilterOpen(false); }} className="px-4 py-2 hover:bg-gray-800 cursor-pointer text-sm text-gray-300">All</div>
+                <div onClick={() => { setRoleFilter('Acting'); setIsFilterOpen(false); }} className="px-4 py-2 hover:bg-gray-800 cursor-pointer text-sm text-gray-300">Actor</div>
+                <div onClick={() => { setRoleFilter('Directing'); setIsFilterOpen(false); }} className="px-4 py-2 hover:bg-gray-800 cursor-pointer text-sm text-gray-300">Director</div>
+                <div onClick={() => { setRoleFilter('Writing'); setIsFilterOpen(false); }} className="px-4 py-2 hover:bg-gray-800 cursor-pointer text-sm text-gray-300">Writer</div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -159,8 +192,8 @@ const PeoplePage: React.FC<PeoplePageProps> = ({ onPersonClick }) => {
                       key={pageNum}
                       onClick={() => handlePageChange(pageNum)}
                       className={`px-3 py-1 rounded transition ${pageNum === currentPage
-                          ? 'bg-red-600 text-white font-bold'
-                          : 'bg-gray-800 text-white hover:bg-gray-700'
+                        ? 'bg-red-600 text-white font-bold'
+                        : 'bg-gray-800 text-white hover:bg-gray-700'
                         }`}
                     >
                       {pageNum}

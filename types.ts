@@ -86,19 +86,32 @@ export type Drama = Content;
 export interface Person {
   id: string;
   tmdb_id: number;
+  imdb_id?: string | null;
   name: string;
-  profile_path?: string | null;
   biography?: string | null;
   birthday?: string | null;
   deathday?: string | null;
+  gender?: number;                // 0=not set, 1=female, 2=male, 3=non-binary
+  known_for_department?: string | null;
   place_of_birth?: string | null;
-  gender?: number; // 1=Female, 2=Male, 3=Non-binary
-  known_for_department?: string; // 'Acting', 'Directing', 'Writing'
+  profile_path?: string | null;
   popularity?: number;
-  imdb_id?: string | null;
   also_known_as?: string[];
   homepage?: string | null;
-  adult?: boolean;
+  external_ids?: {                // NEW: Backend enrichment
+    imdb_id?: string;
+    wikidata_id?: string;
+    facebook_id?: string;
+    instagram_id?: string;
+    twitter_id?: string;
+  };
+  social_ids?: {                  // NEW: Backend enrichment
+    instagram?: string;
+    twitter?: string;
+    facebook?: string;
+    tiktok?: string;
+  };
+  combined_credits_count?: number; // NEW: Total filmography size for sorting
   created_at?: string;
   updated_at?: string;
 }

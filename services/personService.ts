@@ -17,7 +17,8 @@ import type { Person, Content } from '../types';
  */
 export const fetchAllPeople = async (
     page: number = 1,
-    pageSize: number = 200
+    pageSize: number = 200,
+    sortBy: 'popularity' | 'credits' = 'popularity'  // NEW: Support sorting by filmography size
 ): Promise<{ people: Person[], total: number }> => {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -28,12 +29,15 @@ export const fetchAllPeople = async (
         .select('*', { count: 'exact', head: true })
         .not('profile_path', 'is', null);
 
-    // Get paginated data
+    // Determine order column
+    const orderColumn = sortBy === 'credits' ? 'combined_credits_count' : 'popularity';
+
+    // Get paginated data with dynamic sorting
     const { data, error } = await supabase
         .from('people')
         .select('*')
         .not('profile_path', 'is', null)
-        .order('popularity', { ascending: false, nullsFirst: false })
+        .order(orderColumn, { ascending: false, nullsFirst: false })
         .range(from, to);
 
     if (error) throw error;

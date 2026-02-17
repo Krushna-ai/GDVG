@@ -8,7 +8,7 @@ import { ArrowLeftIcon } from './icons';
 import SEOHead from './SEO/SEOHead';
 import { getProfileUrl, PLACEHOLDER_PROFILE } from '../lib/tmdbImages';
 import ImageGallery from './ImageGallery';
-import { getTmdbPersonUrl, getImdbUrl, getWikipediaUrl } from '../lib/externalLinks';
+import { getTmdbPersonUrl, getImdbPersonUrl, getWikipediaUrl, getWikidataUrl, getInstagramUrl, getTwitterUrl, getFacebookUrl, getTiktokUrl } from '../lib/externalLinks';
 
 interface PersonDetailProps {
     person?: Person;
@@ -163,7 +163,7 @@ const PersonDetail: React.FC<PersonDetailProps> = ({ person: initialPerson, onBa
                                             )}
                                             {person.imdb_id && (
                                                 <a
-                                                    href={getImdbUrl(person.imdb_id)}
+                                                    href={getImdbPersonUrl(person.imdb_id)}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="flex items-center gap-2 bg-[#f5c518] hover:bg-[#e0b00f] text-black px-3 py-2 rounded text-xs font-semibold transition"
@@ -179,6 +179,57 @@ const PersonDetail: React.FC<PersonDetailProps> = ({ person: initialPerson, onBa
                                                     className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded text-xs font-semibold transition"
                                                 >
                                                     <span>📖</span> Wikipedia
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Social Media Links */}
+                                {(person.social_ids || person.external_ids) && (
+                                    <div className="mt-4">
+                                        <h4 className="text-gray-400 font-bold text-xs uppercase mb-2">
+                                            Social Media
+                                        </h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {person.social_ids?.instagram && (
+                                                <a
+                                                    href={getInstagramUrl(person.social_ids.instagram)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="bg-gradient-to-br from-purple-600 to-pink-500 text-white px-3 py-1.5 rounded text-xs font-bold hover:shadow-lg transition"
+                                                >
+                                                    📷 Instagram
+                                                </a>
+                                            )}
+                                            {person.social_ids?.twitter && (
+                                                <a
+                                                    href={getTwitterUrl(person.social_ids.twitter)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="bg-black text-white px-3 py-1.5 rounded text-xs font-bold hover:shadow-lg transition"
+                                                >
+                                                    𝕏 Twitter
+                                                </a>
+                                            )}
+                                            {person.external_ids?.facebook_id && (
+                                                <a
+                                                    href={getFacebookUrl(person.external_ids.facebook_id)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="bg-blue-600 text-white px-3 py-1.5 rounded text-xs font-bold hover:shadow-lg transition"
+                                                >
+                                                    f Facebook
+                                                </a>
+                                            )}
+                                            {person.social_ids?.tiktok && (
+                                                <a
+                                                    href={getTiktokUrl(person.social_ids.tiktok)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="bg-black text-white px-3 py-1.5 rounded text-xs font-bold hover:shadow-lg transition"
+                                                >
+                                                    🎵 TikTok
                                                 </a>
                                             )}
                                         </div>
