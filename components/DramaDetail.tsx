@@ -14,7 +14,7 @@ import TrackModal from './TrackModal';
 import SEOHead from './SEO/SEOHead';
 import { getPosterUrl, getBackdropUrl, getProfileUrl, getLogoUrl, PLACEHOLDER_POSTER, PLACEHOLDER_PROFILE } from '../lib/tmdbImages';
 import { getTmdbContentUrl, getImdbUrl, getWikipediaUrl } from '../lib/externalLinks';
-import { getContentUrl } from '../lib/urlHelper';
+import { getContentUrl, getPersonUrl } from '../lib/urlHelper';
 import ImageGallery from './ImageGallery';
 import WatchProvidersRegional from './WatchProvidersRegional';
 
@@ -365,7 +365,7 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                                 <div
                                     key={cast.id}
                                     className="flex flex-col items-center text-center cursor-pointer group"
-                                    onClick={() => handlePerson(cast.person?.name || '')}
+                                    onClick={() => cast.person && navigate(getPersonUrl(cast.person))}
                                 >
                                     <div className="w-24 h-24 rounded-full overflow-hidden mb-3 border-2 border-gray-800 group-hover:border-red-600 transition">
                                         <img

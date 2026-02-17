@@ -27,7 +27,7 @@ import PeoplePage from './components/PeoplePage';
 import { fetchPublishedContent, fetchTopRated, fetchRecentlyAdded } from './services/contentService';
 import { fetchUserList, updateUserListEntry, removeFromUserList } from './services/listService';
 import { syncGoogleUserData, getUserProfile } from './services/userService';
-import { getContentUrl } from './lib/urlHelper';
+import { getContentUrl, getPersonUrl } from './lib/urlHelper';
 
 import type { Content } from './types';
 
@@ -321,7 +321,7 @@ const App: React.FC = () => {
             />
           } />
 
-          <Route path="/person/:name" element={
+          <Route path="/people/:id/:slug?" element={
             <PersonDetail
               onBack={() => navigate(-1)}
               onDramaClick={(d) => navigate(getContentUrl(d))}

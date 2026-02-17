@@ -63,13 +63,45 @@ export const getPersonById = async (id: string): Promise<Person | null> => {
 };
 
 /**
- * Get person by name (case-insensitive)
+ * Get person by GDVG-ID (new URL system)
  */
-export const getPersonByName = async (name: string): Promise<Person | null> => {
+export const getPersonByGdvgId = async (gdvgId: number | string): Promise<Person | null> => {
+    const id = typeof gdvgId === 'string' ? parseInt(gdvgId, 10) : gdvgId;
+
     const { data, error } = await supabase
         .from('people')
         .select('*')
-        .ilike('name', name)
+        .eq('gdvg_id', id)
+        .single();
+
+    if (error) return null;
+    return data;
+};
+
+/**
+ * Get person by name, GDVG-ID, or UUID (handles URL routing)
+ * Supports:
+ *   - GDVG-ID: "100523" (new format)
+ *   - Full UUID: "6a5562cf-7748-43c3-a426-be788f87a5ac"
+ *   - Person name: "Neil Dudgeon" (backward compat)
+ */
+export const getPersonByName = async (nameOrId: string): Promise<Person | null> => {
+    // Check if it's a pure number (GDVG-ID)
+    if (/^\d+$/.test(nameOrId)) {
+        return await getPersonByGdvgId(parseInt(nameOrId, 10));
+    }
+
+    // Check if it's a UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(nameOrId);
+    if (isUUID) {
+        return await getPersonById(nameOrId);
+    }
+
+    // Otherwise treat as name (backward compatibility)
+    const { data, error } = await supabase
+        .from('people')
+        .select('*')
+        .ilike('name', nameOrId)
         .limit(1)
         .single();
 

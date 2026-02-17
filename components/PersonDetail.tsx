@@ -18,7 +18,7 @@ interface PersonDetailProps {
 }
 
 const PersonDetail: React.FC<PersonDetailProps> = ({ person: initialPerson, onBack, onDrama }) => {
-    const { name } = useParams();
+    const { id } = useParams(); // Changed from 'name' to 'id' for GDVG-ID URLs
     const navigate = useNavigate();
     const [person, setPerson] = useState<Person | null>(initialPerson || null);
     const [works, setWorks] = useState<Content[]>([]);
@@ -26,12 +26,13 @@ const PersonDetail: React.FC<PersonDetailProps> = ({ person: initialPerson, onBa
     const [showAllAkas, setShowAllAkas] = useState(false);
 
     useEffect(() => {
-        if (!initialPerson && name) {
-            getPersonByName(name).then(p => setPerson(p));
+        if (!initialPerson && id) {
+            // getPersonByName now handles GDVG-ID, UUID, or name lookups
+            getPersonByName(id).then(p => setPerson(p));
         } else {
             setPerson(initialPerson || null);
         }
-    }, [name, initialPerson]);
+    }, [id, initialPerson]);
 
     useEffect(() => {
         if (!person) return;
