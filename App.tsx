@@ -261,7 +261,7 @@ const App: React.FC = () => {
           } />
 
           {/* Content-type based routes for better SEO */}
-          <Route path="/series/:id" element={
+          <Route path="/series/:id/:slug?" element={
             <DramaDetail
               session={session}
               onBack={() => navigate(-1)}
@@ -276,7 +276,7 @@ const App: React.FC = () => {
             />
           } />
 
-          <Route path="/movies/:id" element={
+          <Route path="/movies/:id/:slug?" element={
             <DramaDetail
               session={session}
               onBack={() => navigate(-1)}
@@ -291,7 +291,7 @@ const App: React.FC = () => {
             />
           } />
 
-          <Route path="/drama/:id" element={
+          <Route path="/drama/:id/:slug?" element={
             <DramaDetail
               session={session}
               onBack={() => navigate(-1)}
@@ -306,7 +306,7 @@ const App: React.FC = () => {
             />
           } />
 
-          <Route path="/anime/:id" element={
+          <Route path="/anime/:id/:slug?" element={
             <DramaDetail
               session={session}
               onBack={() => navigate(-1)}
