@@ -259,22 +259,6 @@ const App: React.FC = () => {
             />
           } />
 
-          {/* Legacy /title/ route for backwards compatibility */}
-          <Route path="/title" element={<Navigate to="/" replace />} />
-          <Route path="/title/:id" element={
-            <DramaDetail
-              session={session}
-              onBack={() => navigate(-1)}
-              onPlay={handlePlay}
-              isMyList={false}
-              onToggleMyList={handleSimpleListToggle}
-              onOpenAuth={() => setIsAuthModalOpen(true)}
-              onPersonClick={(name) => navigate(`/person/${encodeURIComponent(name)}`)}
-              onGenreClick={(g) => navigate(`/browse/series?genre=${encodeURIComponent(g)}`)}
-              onDramaClick={(d) => navigate(`/title/${d.id}`)}
-              onRefreshList={loadMyList}
-            />
-          } />
 
           {/* Content-type based routes for better SEO */}
           <Route path="/series/:id" element={
