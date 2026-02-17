@@ -42,6 +42,7 @@ export interface Keyword {
 
 export interface Content {
   id: string;
+  gdvg_id?: number;                   // NEW: Custom GDVG ID for URLs
   tmdb_id: number;
   imdb_id?: string | null;
   content_type: ContentType;
@@ -85,6 +86,7 @@ export type Drama = Content;
 
 export interface Person {
   id: string;
+  gdvg_id?: number;                   // NEW: Custom GDVG ID for URLs
   tmdb_id: number;
   imdb_id?: string | null;
   name: string;

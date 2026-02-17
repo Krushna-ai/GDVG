@@ -1,24 +1,10 @@
-/**
- * URL Helper Functions
- * Generates SEO-friendly URLs based on content type
- */
-
-export interface Content {
-    id: string;
-    content_type?: string;
-    title?: string;
-    name?: string;
-}
+import type { Content, Person } from '../types';
 
 /**
- * Get URL prefix based on content type
+ * Get the content type prefix for URLs
  */
-export function getContentTypePrefix(contentType?: string): string {
-    if (!contentType) return 'title';
-
-    const type = contentType.toLowerCase();
-
-    switch (type) {
+export function getContentTypePrefix(contentType: string): string {
+    switch (contentType.toLowerCase()) {
         case 'tv':
             return 'series';
         case 'movie':
@@ -27,17 +13,35 @@ export function getContentTypePrefix(contentType?: string): string {
             return 'drama';
         case 'anime':
             return 'anime';
+        case 'variety':
+            return 'variety';
+        case 'documentary':
+            return 'documentary';
         default:
             return 'title';
     }
 }
 
 /**
- * Generate SEO-friendly URL for content
+ * Get content type from URL prefix
+ */
+export function getContentTypeFromPrefix(prefix: string): string {
+    switch (prefix.toLowerCase()) {
+        case 'series':
+            return 'tv';
+        case 'movies':
+            return 'movie';
+        default:
+            return prefix;
+    }
+}
+
+/**
+ * Generate SEO-friendly URL for content (MyDramaList style)
  * Examples:
- *   /series/breaking-bad-6a5562cf
- *   /movies/inception-xyz12345
- * Uses first 8 chars of UUID - 4.3B combinations (collision-safe)
+ *   /series/736993/breaking-bad
+ *   /movies/123456/inception
+ * Uses GDVG-ID (6-digit auto-incrementing number)
  */
 export function getContentUrl(content: Content): string {
     const prefix = getContentTypePrefix(content.content_type);
@@ -46,16 +50,16 @@ export function getContentUrl(content: Content): string {
     // Create slug from title
     const slug = createSlug(title);
 
-    // Use first 8 characters of UUID (4.3 billion combinations - collision-safe for realistic volumes)
-    const shortId = content.id.substring(0, 8);
+    // Use GDVG-ID (fallback to UUID short ID if not available yet)
+    const id = content.gdvg_id || content.id.substring(0, 8);
 
-    // Combine: /[type]/[slug]-[short-id]
+    // Combine: /[type]/[gdvg-id]/[slug]
     if (slug) {
-        return `/${prefix}/${slug}-${shortId}`;
+        return `/${prefix}/${id}/${slug}`;
     }
 
-    // Fallback to just short ID if no title
-    return `/${prefix}/${shortId}`;
+    // Fallback to just ID if no title
+    return `/${prefix}/${id}`;
 }
 
 /**
@@ -70,21 +74,42 @@ export function createSlug(title: string): string {
 }
 
 /**
+ * Generate URL for person pages
+ * Example: /people/123456/bryan-cranston
+ */
+export function getPersonUrl(person: Person): string {
+    const slug = createSlug(person.name);
+    const id = person.gdvg_id || person.id.substring(0, 8);
+
+    if (slug) {
+        return `/people/${id}/${slug}`;
+    }
+
+    return `/people/${id}`;
+}
+
+/**
  * Extract ID from slug-based URL parameter
  * Handles formats like:
- *   - "breaking-bad-6a5562cf" -> extracts "6a5562cf" (8-char short ID)
+ *   - "736993" (GDVG-ID)
+ *   - "breaking-bad-6a5562cf" -> extracts "6a5562cf" (8-char short ID) - backward compat
  *   - "breaking-bad-6a5562cf-7748-43c3-a426-be788f87a5ac" -> extracts full UUID (backward compat)
  *   - "6a5562cf-7748-43c3-a426-be788f87a5ac" -> full UUID, return as-is
  * Returns the extracted ID
  */
 export function extractIdFromSlug(slugOrId: string): string {
-    // Check if it's already a full UUID (at the start)
+    // Check if it's a pure number (GDVG-ID)
+    if (/^\d+$/.test(slugOrId)) {
+        return slugOrId;
+    }
+
+    // Check if it's a full UUID
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
     if (isUUID) {
         return slugOrId;
     }
 
-    // Try to extract UUID from the end of the slug (backward compatibility with full UUID URLs)
+    // Try to extract UUID from the end (for backward compatibility with full UUID URLs)
     // UUID pattern: 8-4-4-4-12 hexadecimal characters separated by hyphens
     const uuidMatch = slugOrId.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
 
@@ -92,7 +117,7 @@ export function extractIdFromSlug(slugOrId: string): string {
         return uuidMatch[1];
     }
 
-    // Extract 8-char short ID from end (new shorter format)
+    // Extract 8-char short ID from end (backward compat with old format)
     const parts = slugOrId.split('-');
     const lastPart = parts[parts.length - 1];
 
@@ -100,7 +125,7 @@ export function extractIdFromSlug(slugOrId: string): string {
         return lastPart;
     }
 
-    // Otherwise, return the original (might be a slug without ID or legacy format)
+    // Otherwise, return the original
     return slugOrId;
 }
 

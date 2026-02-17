@@ -78,6 +78,23 @@ export const fetchContentById = async (id: string): Promise<Content | null> => {
 };
 
 /**
+ * Fetch single content by GDVG-ID (new URL system)
+ */
+export const fetchContentByGdvgId = async (gdvgId: number | string): Promise<Content | null> => {
+    const id = typeof gdvgId === 'string' ? parseInt(gdvgId, 10) : gdvgId;
+
+    const { data, error } = await supabase
+        .from('content')
+        .select('*')
+        .eq('gdvg_id', id)
+        .eq('status', 'published')
+        .single();
+
+    if (error) return null;
+    return data ? normalizeContent(data) : null;
+};
+
+/**
  * Fetch content by slug or ID
  * Handles:
  *   - Old slug format: "title_with_underscores"
@@ -85,6 +102,11 @@ export const fetchContentById = async (id: string): Promise<Content | null> => {
  *   - Direct UUID: "6a5562cf-7748-43c3-a426-be788f87a5ac"
  */
 export const fetchContentBySlug = async (slug: string): Promise<Content | null> => {
+    // Check if it's a pure number (GDVG-ID)
+    if (/^\d+$/.test(slug)) {
+        return await fetchContentByGdvgId(parseInt(slug, 10));
+    }
+
     // Check if it's a direct full UUID
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
 
