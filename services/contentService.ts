@@ -260,7 +260,7 @@ export const fetchContentCast = async (contentId: string, limit = 20): Promise<C
     // We cast to any to avoid strict type mismatches with the defined interfaces
     const result = (data || []).map((item: any) => ({
         ...item,
-        person: Array.isArray(item.person) ? item.person[0] : item.person
+        person: Array.isArray(item.people) ? item.people[0] : item.people
     })) as unknown as CastMember[];
 
     // DEBUG: Check if gdvg_id is present
