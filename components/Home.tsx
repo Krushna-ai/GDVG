@@ -5,6 +5,7 @@ import Carousel from './Carousel';
 import type { Content } from '../types';
 import type { Session } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
+import { getContentUrl } from '../lib/urlHelper';
 
 interface HomeProps {
     dramas: Content[];
@@ -34,7 +35,7 @@ const Home: React.FC<HomeProps> = ({
 }) => {
     const navigate = useNavigate();
 
-    const handleDramaClick = onDramaClick || ((d) => navigate(`/title/${d.id}`));
+    const handleDramaClick = onDramaClick || ((d) => navigate(getContentUrl(d)));
 
     const featuredDrama = dramas.length > 0 ? dramas[0] : null;
     const trendingDramas = dramas.slice(1, 11);

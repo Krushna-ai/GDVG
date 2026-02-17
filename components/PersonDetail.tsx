@@ -7,6 +7,7 @@ import DramaCard from './DramaCard';
 import { ArrowLeftIcon } from './icons';
 import SEOHead from './SEO/SEOHead';
 import { getProfileUrl, PLACEHOLDER_PROFILE } from '../lib/tmdbImages';
+import { getContentUrl } from '../lib/urlHelper';
 import ImageGallery from './ImageGallery';
 import { getTmdbPersonUrl, getImdbPersonUrl, getWikipediaUrl, getWikidataUrl, getInstagramUrl, getTwitterUrl, getFacebookUrl, getTiktokUrl } from '../lib/externalLinks';
 
@@ -61,7 +62,7 @@ const PersonDetail: React.FC<PersonDetailProps> = ({ person: initialPerson, onBa
         if (onDrama) {
             onDrama(content);
         } else {
-            navigate(`/title/${content.id}`);
+            navigate(getContentUrl(content));
         }
     };
 

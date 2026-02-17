@@ -14,6 +14,7 @@ import TrackModal from './TrackModal';
 import SEOHead from './SEO/SEOHead';
 import { getPosterUrl, getBackdropUrl, getProfileUrl, getLogoUrl, PLACEHOLDER_POSTER, PLACEHOLDER_PROFILE } from '../lib/tmdbImages';
 import { getTmdbContentUrl, getImdbUrl, getWikipediaUrl } from '../lib/externalLinks';
+import { getContentUrl } from '../lib/urlHelper';
 import ImageGallery from './ImageGallery';
 import WatchProvidersRegional from './WatchProvidersRegional';
 
@@ -88,7 +89,7 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
     const handleBack = onBack || (() => navigate(-1));
     const handlePerson = onPersonClick || ((name) => navigate(`/person/${encodeURIComponent(name)}`));
     const handleGenre = onGenreClick || ((genre) => navigate(`/browse/series?genre=${encodeURIComponent(genre)}`));
-    const handleDrama = onDramaClick || ((d) => navigate(`/title/${d.id}`));
+    const handleDrama = onDramaClick || ((d) => navigate(getContentUrl(d)));
 
     useEffect(() => {
         const loadContent = async () => {
