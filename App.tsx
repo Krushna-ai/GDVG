@@ -328,6 +328,14 @@ const App: React.FC = () => {
             />
           } />
 
+          {/* Legacy redirect: /person/:name -> handled by PersonDetail with name lookup */}
+          <Route path="/person/:name" element={
+            <PersonDetail
+              onBack={() => navigate(-1)}
+              onDramaClick={(d) => navigate(getContentUrl(d))}
+            />
+          } />
+
           <Route path="/browse/series" element={<CatalogWrapper type="Series" />} />
           <Route path="/browse/movies" element={<CatalogWrapper type="Movie" />} />
 
