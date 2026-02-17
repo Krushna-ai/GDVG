@@ -78,9 +78,44 @@ export const fetchContentById = async (id: string): Promise<Content | null> => {
 };
 
 /**
- * Fetch content by slug (title with underscores) - for URL routing
+ * Fetch content by slug or ID
+ * Handles:
+ *   - Old slug format: "title_with_underscores"
+ *   - New slug-shortid format: "title-slug-6a5562cf" (extracts "6a5562cf")
+ *   - Direct UUID: "6a5562cf-7748-43c3-a426-be788f87a5ac"
  */
 export const fetchContentBySlug = async (slug: string): Promise<Content | null> => {
+    // Check if it's a direct full UUID
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+
+    if (isUUID) {
+        return await fetchContentById(slug);
+    }
+
+    // Try to extract full UUID from end (backward compatibility)
+    const uuidMatch = slug.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
+    if (uuidMatch) {
+        return await fetchContentById(uuidMatch[1]);
+    }
+
+    // Check if it's the slug-shortid format (ends with -[8 hex chars])
+    const parts = slug.split('-');
+    const lastPart = parts[parts.length - 1];
+
+    if (/^[0-9a-f]{8}$/i.test(lastPart)) {
+        // New format: extract short ID and search by prefix
+        const { data, error } = await supabase
+            .from('content')
+            .select('*')
+            .eq('status', 'published')
+            .ilike('id', `${lastPart}%`) // Match IDs starting with this 8-char prefix
+            .single();
+
+        if (error) return null;
+        return data ? normalizeContent(data) : null;
+    }
+
+    // Fallback to old slug format (title search with underscores)
     const title = slug.replace(/_/g, ' ');
 
     const { data, error } = await supabase
