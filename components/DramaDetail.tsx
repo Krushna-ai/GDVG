@@ -79,7 +79,7 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
     const [similarContent, setSimilarContent] = useState<Content[]>([]);
     const [recommendations, setRecommendations] = useState<Content[]>([]); // NEW: TMDB recommendations
     const [isShareCopied, setIsShareCopied] = useState(false);
-    const [activeTab, setActiveTab] = useState<'overview' | 'cast' | 'reviews' | 'discussions'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'cast' | 'story-guide' | 'reception' | 'production' | 'photos' | 'reviews' | 'discussions'>('overview');
 
     const [listEntry, setListEntry] = useState<UserListEntry | null>(null);
     const [isTrackModalOpen, setIsTrackModalOpen] = useState(false);
@@ -225,6 +225,18 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                                 {drama.overview || 'No synopsis available.'}
                             </p>
                         </div>
+
+                        {/* Wiki Plot — detailed plot summary from Wikipedia */}
+                        {drama.wiki_plot && (
+                            <div>
+                                <h3 className="text-xl font-bold text-white mb-3 border-l-4 border-red-600 pl-3">Plot</h3>
+                                <div className="text-gray-300 leading-relaxed bg-[#141414] p-6 rounded-lg border border-gray-800 shadow-sm space-y-3">
+                                    {drama.wiki_plot.split('\n').filter(p => p.trim()).map((para, i) => (
+                                        <p key={i}>{para.trim()}</p>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Keywords/Tags */}
                         {keywords.length > 0 && (
@@ -381,6 +393,67 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                         </div>
                     </div>
                 );
+            case 'story-guide':
+                return (
+                    <div className="animate-fadeIn space-y-6">
+                        <h3 className="text-2xl font-bold text-white mb-4">Story Guide</h3>
+                        {drama.wiki_episode_guide ? (
+                            <div className="text-gray-300 leading-relaxed bg-[#141414] p-6 rounded-lg border border-gray-800 shadow-sm space-y-3">
+                                {drama.wiki_episode_guide.split('\n').filter(p => p.trim()).map((para, i) => (
+                                    <p key={i}>{para.trim()}</p>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 italic">Episode guide coming soon.</p>
+                        )}
+                    </div>
+                );
+            case 'reception':
+                return (
+                    <div className="animate-fadeIn space-y-6">
+                        <h3 className="text-2xl font-bold text-white mb-4">Reviews &amp; Reception</h3>
+                        {drama.wiki_reception ? (
+                            <div className="text-gray-300 leading-relaxed bg-[#141414] p-6 rounded-lg border border-gray-800 shadow-sm space-y-3">
+                                {drama.wiki_reception.split('\n').filter(p => p.trim()).map((para, i) => (
+                                    <p key={i}>{para.trim()}</p>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 italic">No critical reception data available.</p>
+                        )}
+                        {/* User reviews below wiki reception */}
+                        <div className="mt-8">
+                            <h3 className="text-xl font-bold text-white mb-4 border-l-4 border-red-600 pl-3">User Reviews</h3>
+                            <ReviewSection dramaId={drama.id} session={session} onOpenAuth={onOpenAuth} />
+                        </div>
+                    </div>
+                );
+            case 'production':
+                return (
+                    <div className="animate-fadeIn space-y-6">
+                        <h3 className="text-2xl font-bold text-white mb-4">Production</h3>
+                        {drama.wiki_production ? (
+                            <div className="text-gray-300 leading-relaxed bg-[#141414] p-6 rounded-lg border border-gray-800 shadow-sm space-y-3">
+                                {drama.wiki_production.split('\n').filter(p => p.trim()).map((para, i) => (
+                                    <p key={i}>{para.trim()}</p>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-gray-500 italic">No production information available.</p>
+                        )}
+                        {/* Accolades if available */}
+                        {drama.wiki_accolades && (
+                            <div>
+                                <h3 className="text-xl font-bold text-white mb-3 border-l-4 border-red-600 pl-3">Accolades</h3>
+                                <div className="text-gray-300 leading-relaxed bg-[#141414] p-6 rounded-lg border border-gray-800 shadow-sm space-y-3">
+                                    {drama.wiki_accolades.split('\n').filter(p => p.trim()).map((para, i) => (
+                                        <p key={i}>{para.trim()}</p>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
             case 'photos':
                 return <ImageGallery images={drama.images || {}} type="content" />;
             case 'reviews':
@@ -513,14 +586,23 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                     <div className="lg:col-span-2">
                         <div className="flex border-b border-gray-800 mb-8 overflow-x-auto no-scrollbar">
-                            {['overview', 'cast', 'photos', 'reviews', 'discussions'].map((tab) => (
+                            {([
+                                { id: 'overview', label: 'Overview' },
+                                { id: 'cast', label: 'Cast & Crew' },
+                                ...(drama.wiki_episode_guide ? [{ id: 'story-guide', label: 'Story Guide' }] : []),
+                                ...(drama.wiki_reception ? [{ id: 'reception', label: 'Reception' }] : []),
+                                ...(drama.wiki_production ? [{ id: 'production', label: 'Production' }] : []),
+                                { id: 'photos', label: 'Photos' },
+                                { id: 'reviews', label: 'Reviews' },
+                                { id: 'discussions', label: 'Discussions' },
+                            ] as { id: string; label: string }[]).map((tab) => (
                                 <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab as any)}
-                                    className={`px-6 py-3 font-bold uppercase text-sm tracking-wide whitespace-nowrap border-b-2 transition ${activeTab === tab ? 'border-red-600 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id as any)}
+                                    className={`px-6 py-3 font-bold uppercase text-sm tracking-wide whitespace-nowrap border-b-2 transition ${activeTab === tab.id ? 'border-red-600 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'
                                         }`}
                                 >
-                                    {tab}
+                                    {tab.label}
                                 </button>
                             ))}
                         </div>

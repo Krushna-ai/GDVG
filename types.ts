@@ -75,6 +75,18 @@ export interface Content {
   videos?: Video[];                   // Trailers and clips
   keywords?: Keyword[];               // Content keywords/tags
   content_rating?: string;            // e.g., 'TV-MA', '15+'
+  // Wiki content fields (nullable)
+  wiki_plot?: string | null;
+  wiki_synopsis?: string | null;
+  wiki_episode_guide?: string | null;
+  wiki_reception?: string | null;
+  wiki_production?: string | null;
+  wiki_accolades?: string | null;
+  wiki_cast_notes?: string | null;
+  wiki_release?: string | null;
+  wiki_soundtrack?: string | null;
+  wikipedia_url?: string | null;
+  wikidata_id?: string | null;
   created_at?: string;
   updated_at?: string;
 }
