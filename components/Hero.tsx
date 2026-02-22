@@ -33,9 +33,9 @@ const Hero: React.FC<HeroProps> = ({ drama, onPlay, onMoreInfo, isMyList, onTogg
       <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-[#0b0b0b] to-transparent"></div>
 
       <div className="relative z-10 h-full flex flex-col justify-center px-4 md:px-12 lg:px-24 w-full md:w-2/3 lg:w-1/2 pt-16">
-        <h2 className="text-4xl md:text-6xl lg:text-7xl font-extrabold drop-shadow-xl mb-4 text-white leading-tight">
+        <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold drop-shadow-xl mb-4 text-white leading-tight">
           {drama.title || drama.original_title}
-        </h2>
+        </h1>
         <div className="flex items-center space-x-2 mb-4 text-gray-300 font-semibold">
           <span className="text-green-500">98% Match</span>
           {year && <span>{year}</span>}

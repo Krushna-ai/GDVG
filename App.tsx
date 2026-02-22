@@ -173,8 +173,8 @@ const App: React.FC = () => {
       if (!session) setIsAuthModalOpen(true);
       else navigate('/mylist');
     }
-    if (view === 'series') navigate('/browse/series');
-    if (view === 'films') navigate('/browse/movies');
+    if (view === 'series') navigate('/series');
+    if (view === 'films') navigate('/movies');
     if (view === 'people_catalog') navigate('/people');
 
     if (view === 'account') navigate('/account');
@@ -270,7 +270,7 @@ const App: React.FC = () => {
               onToggleMyList={handleSimpleListToggle}
               onOpenAuth={() => setIsAuthModalOpen(true)}
               onPersonClick={(person) => navigate(getPersonUrl(person))}
-              onGenreClick={(g) => navigate(`/browse/series?genre=${encodeURIComponent(g)}`)}
+              onGenreClick={(g) => navigate(`/series?genre=${encodeURIComponent(g)}`)}
               onDramaClick={(d) => navigate(getContentUrl(d))}
               onRefreshList={loadMyList}
             />
@@ -285,7 +285,7 @@ const App: React.FC = () => {
               onToggleMyList={handleSimpleListToggle}
               onOpenAuth={() => setIsAuthModalOpen(true)}
               onPersonClick={(person) => navigate(getPersonUrl(person))}
-              onGenreClick={(g) => navigate(`/browse/series?genre=${encodeURIComponent(g)}`)}
+              onGenreClick={(g) => navigate(`/series?genre=${encodeURIComponent(g)}`)}
               onDramaClick={(d) => navigate(getContentUrl(d))}
               onRefreshList={loadMyList}
             />
@@ -300,7 +300,7 @@ const App: React.FC = () => {
               onToggleMyList={handleSimpleListToggle}
               onOpenAuth={() => setIsAuthModalOpen(true)}
               onPersonClick={(person) => navigate(getPersonUrl(person))}
-              onGenreClick={(g) => navigate(`/browse/series?genre=${encodeURIComponent(g)}`)}
+              onGenreClick={(g) => navigate(`/series?genre=${encodeURIComponent(g)}`)}
               onDramaClick={(d) => navigate(getContentUrl(d))}
               onRefreshList={loadMyList}
             />
@@ -315,7 +315,7 @@ const App: React.FC = () => {
               onToggleMyList={handleSimpleListToggle}
               onOpenAuth={() => setIsAuthModalOpen(true)}
               onPersonClick={(person) => navigate(getPersonUrl(person))}
-              onGenreClick={(g) => navigate(`/browse/series?genre=${encodeURIComponent(g)}`)}
+              onGenreClick={(g) => navigate(`/series?genre=${encodeURIComponent(g)}`)}
               onDramaClick={(d) => navigate(getContentUrl(d))}
               onRefreshList={loadMyList}
             />
@@ -328,8 +328,8 @@ const App: React.FC = () => {
             />
           } />
 
-          <Route path="/browse/series" element={<CatalogWrapper type="Series" />} />
-          <Route path="/browse/movies" element={<CatalogWrapper type="Movie" />} />
+          <Route path="/series" element={<CatalogWrapper type="Series" />} />
+          <Route path="/movies" element={<CatalogWrapper type="Movie" />} />
 
           <Route path="/people" element={
             <PeoplePage onPersonClick={(person) => navigate(getPersonUrl(person))} />

@@ -9,13 +9,13 @@
   
   <!-- Main Sections -->
   <url>
-    <loc>https://gdvg-ten.vercel.app/browse/series</loc>
+    <loc>https://gdvg-ten.vercel.app/series</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   
   <url>
-    <loc>https://gdvg-ten.vercel.app/browse/movies</loc>
+    <loc>https://gdvg-ten.vercel.app/movies</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>

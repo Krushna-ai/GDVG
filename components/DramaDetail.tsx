@@ -88,7 +88,7 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
     // Fallback handlers if props are missing (Routing Mode)
     const handleBack = onBack || (() => navigate(-1));
     const handlePerson = onPersonClick || ((person: Person) => navigate(getPersonUrl(person)));
-    const handleGenre = onGenreClick || ((genre) => navigate(`/browse/series?genre=${encodeURIComponent(genre)}`));
+    const handleGenre = onGenreClick || ((genre) => navigate(`/series?genre=${encodeURIComponent(genre)}`));
     const handleDrama = onDramaClick || ((d) => navigate(getContentUrl(d)));
 
     useEffect(() => {
@@ -466,14 +466,28 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
     const backdropUrl = getBackdropUrl(drama.backdrop_path) || getPosterUrl(drama.poster_path, 'w780') || PLACEHOLDER_POSTER;
     const posterUrl = getPosterUrl(drama.poster_path) || PLACEHOLDER_POSTER;
 
+    // Build breadcrumbs
+    const typeLabel = drama.content_type?.toLowerCase() === 'movie' ? 'Movies' : 'TV Series';
+    const typeUrl = drama.content_type?.toLowerCase() === 'movie' ? 'https://gdvg-ten.vercel.app/movies' : 'https://gdvg-ten.vercel.app/series';
+
+    // NOTE: Avoid circular reference on window.location if SSR is ever used, but since this is CSR, it works.
+    const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+    const breadcrumbs = [
+        { name: 'Home', url: 'https://gdvg-ten.vercel.app/' },
+        { name: typeLabel, url: typeUrl },
+        { name: drama.title, url: currentUrl },
+    ];
+
     return (
         <div className="min-h-screen bg-[#0b0b0b] text-white animate-fadeIn pb-20">
             <SEOHead
                 title={drama.title}
                 description={drama.overview || ''}
                 image={posterUrl}
-                type={drama.content_type === 'movie' ? 'video.movie' : 'video.tv_show'}
-                drama={drama as any}
+                type={drama.content_type?.toLowerCase() === 'movie' ? 'video.movie' : 'video.tv_show'}
+                drama={drama}
+                breadcrumbs={breadcrumbs}
             />
 
             <div className="relative w-full h-[50vh] md:h-[60vh]">

@@ -82,6 +82,7 @@ const PersonDetail: React.FC<PersonDetailProps> = ({ person: initialPerson, onBa
                 description={person.biography || `Learn more about ${person.name}`}
                 image={profileUrl}
                 type="profile"
+                person={person}
             />
 
             <div className="relative">

@@ -6,6 +6,7 @@ import type { Content } from '../types';
 import type { Session } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { getContentUrl } from '../lib/urlHelper';
+import SEOHead from './SEO/SEOHead';
 
 interface HomeProps {
     dramas: Content[];
@@ -51,6 +52,11 @@ const Home: React.FC<HomeProps> = ({
 
     return (
         <div className="animate-fadeIn">
+            <SEOHead
+                title="Watch Movies & TV Series Online"
+                description="Global Drama Verse Guide (GDVG) is your ultimate destination for tracking, discovering, and watching the best TV series and movies globally. Explore K-Dramas, Anime, Western Series, and more."
+                type="website"
+            />
             {featuredDrama && (
                 <Hero
                     drama={featuredDrama}

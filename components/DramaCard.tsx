@@ -3,6 +3,8 @@ import React from 'react';
 import type { Content } from '../types';
 import { PlayCircleIcon } from './icons';
 import { getPosterUrl, PLACEHOLDER_POSTER } from '../lib/tmdbImages';
+import { Link } from 'react-router-dom';
+import { getContentUrl } from '../lib/urlHelper';
 
 interface DramaCardProps {
   drama: Content;
@@ -20,9 +22,15 @@ const DramaCard: React.FC<DramaCardProps> = ({ drama, onClick }) => {
     .map(g => g.name);
 
   return (
-    <div
+    <Link
+      to={getContentUrl(drama)}
       className="group relative flex-shrink-0 w-36 md:w-48 rounded-md overflow-hidden cursor-pointer transition-all duration-300 hover:scale-110 hover:z-20 hover:shadow-xl"
-      onClick={() => onClick(drama)}
+      onClick={(e) => {
+        if (onClick) {
+          e.preventDefault();
+          onClick(drama);
+        }
+      }}
     >
       <img
         src={posterImage}
@@ -40,7 +48,7 @@ const DramaCard: React.FC<DramaCardProps> = ({ drama, onClick }) => {
           {genreNames.map(g => <span key={g}>• {g}</span>)}
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
 
