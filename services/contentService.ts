@@ -158,7 +158,7 @@ export const fetchContentBySlug = async (slug: string): Promise<Content | null> 
 export const searchContent = async (query: string, limit = 10): Promise<Content[]> => {
     const { data, error } = await supabase
         .from('content')
-        .select('id, gdvg_id, title, poster_path, backdrop_path, content_type, category, release_date, first_air_date, vote_average, origin_country, genres')
+        .select('id, gdvg_id, title, poster_path, backdrop_path, content_type, release_date, first_air_date, vote_average, origin_country, genres')
         .eq('status', 'published')
         .ilike('title', `%${query}%`)
         .limit(limit);

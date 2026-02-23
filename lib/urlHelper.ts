@@ -45,8 +45,9 @@ export function getContentTypeFromPrefix(prefix: string): string {
  */
 export function getContentUrl(content: Content): string {
     if (!content.gdvg_id) {
-        console.error('Content missing gdvg_id:', content.id, content.title);
-        throw new Error(`Content "${content.title}" is missing gdvg_id`);
+        console.warn('Content missing gdvg_id, falling back to UUID:', content.id, content.title);
+        const prefix = getContentTypePrefix(content.content_type || 'title');
+        return `/${prefix}/${content.id}`;
     }
 
     const prefix = getContentTypePrefix(content.content_type);
@@ -78,8 +79,8 @@ export function createSlug(title: string): string {
  */
 export function getPersonUrl(person: Person): string {
     if (!person.gdvg_id) {
-        console.error('Person missing gdvg_id:', person.id, person.name);
-        throw new Error(`Person "${person.name}" is missing gdvg_id. Ensure gdvg_id is selected in database query.`);
+        console.warn('Person missing gdvg_id, falling back to UUID:', person.id, person.name);
+        return `/people/${person.id}`;
     }
 
     const slug = createSlug(person.name);
