@@ -1,9 +1,9 @@
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import { createSlug } from '@/lib/urlHelper';
 
 export async function generateContentStaticParams(contentTypes?: string[], limit = 1000) {
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
 
     let query = supabase
       .from('content')
@@ -36,7 +36,7 @@ export async function generateContentStaticParams(contentTypes?: string[], limit
 
 export async function generatePeopleStaticParams(limit = 1000) {
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
 
     const { data, error } = await supabase
       .from('people')

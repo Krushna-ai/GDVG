@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import { fetchContentBySlug } from '@/services/contentService';
 import { buildContentMetadata } from './metadata';
 import { buildContentJsonLd } from './jsonLd';
@@ -8,7 +8,7 @@ import type { Content } from '@/types';
 export async function getContentDetail(
   params: { id: string; slug: string }
 ): Promise<Content | null> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const content = await fetchContentBySlug(decodeURIComponent(params.id), supabase);
   return content;
 }

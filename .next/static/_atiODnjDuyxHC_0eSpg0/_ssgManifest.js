@@ -1,0 +1,1 @@
+self.__SSG_MANIFEST=new Set(["\u002Fanime\u002F[id]\u002F[slug]","\u002Fdrama\u002F[id]\u002F[slug]","\u002Fmovies\u002F[id]\u002F[slug]","\u002Fpeople\u002F[id]\u002F[slug]","\u002Fseries\u002F[id]\u002F[slug]"]);self.__SSG_MANIFEST_CB&&self.__SSG_MANIFEST_CB()

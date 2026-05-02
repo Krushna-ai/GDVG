@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import { getPersonByName } from '@/services/personService';
 import { buildPersonMetadata } from './metadata';
 import { buildPersonJsonLd } from './jsonLd';
@@ -10,7 +10,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://gdvg-ten.vercel.ap
 export async function getPersonDetail(
   params: { id: string; slug: string }
 ): Promise<Person | null> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const person = await getPersonByName(decodeURIComponent(params.id), supabase);
   return person;
 }

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__kimi-code__kimi_glob",
+      "mcp__kimi-code__kimi_grep",
+      "mcp__kimi-code__kimi_read_file",
+      "mcp__kimi-code__kimi_agent",
+      "mcp__kimi-code__kimi_research",
+      "Bash(npm run *)"
+    ]
+  }
+}

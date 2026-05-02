@@ -1,0 +1,15 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/sitemap/route": "/api/sitemap",
+  "/account/page": "/account",
+  "/mylist/page": "/mylist",
+  "/anime/[id]/[slug]/page": "/anime/[id]/[slug]",
+  "/people/page": "/people",
+  "/page": "/",
+  "/drama/[id]/[slug]/page": "/drama/[id]/[slug]",
+  "/movies/page": "/movies",
+  "/people/[id]/[slug]/page": "/people/[id]/[slug]",
+  "/series/page": "/series",
+  "/movies/[id]/[slug]/page": "/movies/[id]/[slug]",
+  "/series/[id]/[slug]/page": "/series/[id]/[slug]"
+}
