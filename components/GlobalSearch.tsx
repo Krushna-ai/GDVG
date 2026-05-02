@@ -5,6 +5,7 @@ import type { Content, Person } from '../types';
 import { searchContent } from '../services/contentService';
 import { searchPeople } from '../services/personService';
 import { getPosterUrl, getProfileUrl, PLACEHOLDER_POSTER, PLACEHOLDER_PROFILE } from '../lib/tmdbImages';
+import SafeImage from './SafeImage';
 
 interface GlobalSearchProps {
   isOpen: boolean;
@@ -132,10 +133,12 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, onDramaCli
                     className="flex bg-[#141414] hover:bg-[#1f1f1f] border border-gray-800 rounded-lg overflow-hidden cursor-pointer transition group"
                     onClick={() => handleContentSelect(item)}
                   >
-                    <img
+                    <SafeImage
                       src={getPosterUrl(item.poster_path, 'w185') || PLACEHOLDER_POSTER}
-                      alt={item.title}
-                      className="w-24 h-36 object-cover"
+                      alt={item.title || 'Content'}
+                      width={96}
+                      height={144}
+                      className="object-cover"
                     />
                     <div className="p-4 flex flex-col justify-center">
                       <h4 className="text-white font-bold text-lg group-hover:text-red-500 transition">{item.title}</h4>
@@ -163,11 +166,13 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, onDramaCli
                     className="flex flex-col items-center cursor-pointer group"
                     onClick={() => handlePersonSelect(person)}
                   >
-                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-gray-800 group-hover:border-red-600 transition mb-3">
-                      <img
+                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-2 border-gray-800 group-hover:border-red-600 transition mb-3 relative">
+                      <SafeImage
                         src={getProfileUrl(person.profile_path) || PLACEHOLDER_PROFILE}
                         alt={person.name}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 96px, 128px"
                       />
                     </div>
                     <h4 className="text-white text-center font-medium group-hover:text-red-500 transition">{person.name}</h4>

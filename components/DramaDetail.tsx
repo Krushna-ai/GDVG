@@ -1,20 +1,22 @@
 
+'use client';
+
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import type { Content, Person, UserListEntry, WatchStatus, WatchLink, CastMember } from '../types';
 import type { Session } from '@supabase/supabase-js';
 import { PlayIcon, PlusIcon, CheckIcon, ArrowLeftIcon, UserCircleIcon, StarIcon } from './icons';
 import ReviewSection from './ReviewSection';
 import DiscussionSection from './DiscussionSection';
-import { fetchContentById, fetchContentBySlug, fetchSimilarContent, fetchRecommendations, fetchContentCast, fetchContentCrew, fetchWatchLinks } from '../services/contentService';
+import { fetchSimilarContent, fetchRecommendations, fetchContentCast, fetchContentCrew, fetchWatchLinks } from '../services/contentService';
 import { fetchUserList, updateUserListEntry, removeFromUserList } from '../services/listService';
 import DramaCard from './DramaCard';
 import AdBanner from './AdBanner';
 import TrackModal from './TrackModal';
-import SEOHead from './SEO/SEOHead';
 import { getPosterUrl, getBackdropUrl, getProfileUrl, getLogoUrl, PLACEHOLDER_POSTER, PLACEHOLDER_PROFILE } from '../lib/tmdbImages';
 import { getTmdbContentUrl, getImdbUrl, getWikipediaUrl } from '../lib/externalLinks';
 import { getContentUrl, getPersonUrl } from '../lib/urlHelper';
+import SafeImage from './SafeImage';
 import ImageGallery from './ImageGallery';
 import WatchProvidersRegional from './WatchProvidersRegional';
 
@@ -69,15 +71,14 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
     onDramaClick,
     onRefreshList
 }) => {
-    const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
+    const router = useRouter();
 
     const [activeDrama, setActiveDrama] = useState<Content | null>(propDrama || null);
     const [castMembers, setCastMembers] = useState<CastMember[]>([]);
     const [crewMembers, setCrewMembers] = useState<any[]>([]);
     const [watchLinks, setWatchLinks] = useState<WatchLink[]>([]);
     const [similarContent, setSimilarContent] = useState<Content[]>([]);
-    const [recommendations, setRecommendations] = useState<Content[]>([]); // NEW: TMDB recommendations
+    const [recommendations, setRecommendations] = useState<Content[]>([]);
     const [isShareCopied, setIsShareCopied] = useState(false);
     const [activeTab, setActiveTab] = useState<'overview' | 'cast' | 'story-guide' | 'reception' | 'production' | 'photos' | 'reviews' | 'discussions'>('overview');
 
@@ -85,47 +86,18 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
     const [isTrackModalOpen, setIsTrackModalOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(!propDrama);
 
-    // Fallback handlers if props are missing (Routing Mode)
-    const handleBack = onBack || (() => navigate(-1));
-    const handlePerson = onPersonClick || ((person: Person) => navigate(getPersonUrl(person)));
-    const handleGenre = onGenreClick || ((genre) => navigate(`/series?genre=${encodeURIComponent(genre)}`));
-    const handleDrama = onDramaClick || ((d) => navigate(getContentUrl(d)));
+    // Fallback handlers if props are missing
+    const handleBack = onBack || (() => router.back());
+    const handlePerson = onPersonClick || ((person: Person) => router.push(getPersonUrl(person)));
+    const handleGenre = onGenreClick || ((genre: string) => router.push(`/series?genre=${encodeURIComponent(genre)}`));
+    const handleDrama = onDramaClick || ((d: Content) => router.push(getContentUrl(d)));
 
     useEffect(() => {
-        const loadContent = async () => {
-            if (propDrama) {
-                setActiveDrama(propDrama);
-                setIsLoading(false);
-                return;
-            }
-
-            if (id) {
-                setIsLoading(true);
-                try {
-                    let fetched: Content | null = null;
-                    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-
-                    if (isUUID) {
-                        fetched = await fetchContentById(id);
-                    } else {
-                        const decodedStr = decodeURIComponent(id);
-                        fetched = await fetchContentBySlug(decodedStr);
-                    }
-
-                    if (fetched) {
-                        setActiveDrama(fetched);
-                    } else {
-                        console.error("Content not found:", id);
-                    }
-                } catch (e) {
-                    console.error("Failed to load content", e);
-                } finally {
-                    setIsLoading(false);
-                }
-            }
-        };
-        loadContent();
-    }, [id, propDrama]);
+        if (propDrama) {
+            setActiveDrama(propDrama);
+            setIsLoading(false);
+        }
+    }, [propDrama]);
 
     const drama = activeDrama;
 
@@ -332,13 +304,15 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                                     {mainCast.slice(0, 8).map(cast => (
                                         <div
                                             key={cast.id}
-                                            className="bg-[#141414] rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-red-600 transition"
+                                            className="bg-[#141414] rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-red-600 transition relative h-40"
                                             onClick={() => cast.person && handlePerson(cast.person)}
                                         >
-                                            <img
+                                            <SafeImage
                                                 src={getProfileUrl(cast.person?.profile_path) || PLACEHOLDER_PROFILE}
-                                                alt={cast.person?.name}
-                                                className="w-full h-40 object-cover object-top"
+                                                alt={cast.person?.name || 'Cast member'}
+                                                fill
+                                                className="object-cover object-top"
+                                                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
                                             />
                                             <div className="p-3">
                                                 <p className="text-white font-bold text-sm truncate">{cast.person?.name}</p>
@@ -379,11 +353,13 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                                     className="flex flex-col items-center text-center cursor-pointer group"
                                     onClick={() => cast.person && handlePerson(cast.person)}
                                 >
-                                    <div className="w-24 h-24 rounded-full overflow-hidden mb-3 border-2 border-gray-800 group-hover:border-red-600 transition">
-                                        <img
+                                    <div className="w-24 h-24 rounded-full overflow-hidden mb-3 border-2 border-gray-800 group-hover:border-red-600 transition relative">
+                                        <SafeImage
                                             src={getProfileUrl(cast.person?.profile_path) || PLACEHOLDER_PROFILE}
-                                            alt={cast.person?.name}
-                                            className="w-full h-full object-cover"
+                                            alt={cast.person?.name || 'Cast member'}
+                                            fill
+                                            className="object-cover"
+                                            sizes="96px"
                                         />
                                     </div>
                                     <p className="text-white font-bold">{cast.person?.name}</p>
@@ -468,27 +444,11 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
 
     // Build breadcrumbs
     const typeLabel = drama.content_type?.toLowerCase() === 'movie' ? 'Movies' : 'TV Series';
-    const typeUrl = drama.content_type?.toLowerCase() === 'movie' ? 'https://gdvg-ten.vercel.app/movies' : 'https://gdvg-ten.vercel.app/series';
-
-    // NOTE: Avoid circular reference on window.location if SSR is ever used, but since this is CSR, it works.
-    const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
-
-    const breadcrumbs = [
-        { name: 'Home', url: 'https://gdvg-ten.vercel.app/' },
-        { name: typeLabel, url: typeUrl },
-        { name: drama.title, url: currentUrl },
-    ];
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gdvg-ten.vercel.app';
+    const typeUrl = drama.content_type?.toLowerCase() === 'movie' ? `${siteUrl}/movies` : `${siteUrl}/series`;
 
     return (
         <div className="min-h-screen bg-[#0b0b0b] text-white animate-fadeIn pb-20">
-            <SEOHead
-                title={drama.title}
-                description={drama.overview || ''}
-                image={posterUrl}
-                type={drama.content_type?.toLowerCase() === 'movie' ? 'video.movie' : 'video.tv_show'}
-                drama={drama}
-                breadcrumbs={breadcrumbs}
-            />
 
             <div className="relative w-full h-[50vh] md:h-[60vh]">
                 <div
@@ -731,9 +691,11 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                                         {drama.production_companies.map((company: any) => (
                                             <div key={company.id} className="flex items-center gap-3">
                                                 {company.logo_path ? (
-                                                    <img
+                                                    <SafeImage
                                                         src={getLogoUrl(company.logo_path, 'w92') || ''}
                                                         alt={company.name}
+                                                        width={92}
+                                                        height={32}
                                                         className="h-8 w-auto object-contain bg-white/10 rounded px-2 py-1"
                                                     />
                                                 ) : (

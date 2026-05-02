@@ -1,6 +1,6 @@
 
 // Replace this with the specific email you want to have admin access
-export const ADMIN_EMAIL = 'globaldramaverseguide45@gmail.com'; 
+export const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'globaldramaverseguide45@gmail.com'; 
 
 export const MOOD_PRESETS = [
   { label: 'Need a Good Cry', emoji: '😢', query: 'Heartbreaking melodramas that will make me cry, sad endings, emotional' },

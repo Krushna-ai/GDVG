@@ -1,4 +1,7 @@
+'use client';
+
 import React, { useState } from 'react';
+import SafeImage from './SafeImage';
 
 interface ImageItem {
     file_path: string;
@@ -135,11 +138,12 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, type }) => {
                         className="relative group cursor-pointer overflow-hidden rounded-lg bg-gray-900 aspect-[2/3]"
                         onClick={() => openLightbox(image, index)}
                     >
-                        <img
+                        <SafeImage
                             src={getImageUrl(image.file_path, 'w342')}
                             alt={`${activeTab} ${index + 1}`}
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                            loading="lazy"
+                            fill
+                            className="object-cover transition-transform duration-300 group-hover:scale-110"
+                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                         />
 
                         {/* Overlay Info */}
@@ -217,10 +221,13 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ images, type }) => {
 
                     {/* Image */}
                     <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
-                        <img
+                        <SafeImage
                             src={getImageUrl(lightboxImage.file_path, 'original')}
                             alt="Full size"
+                            width={lightboxImage.width || 1920}
+                            height={lightboxImage.height || 1080}
                             className="max-w-full max-h-[90vh] object-contain"
+                            priority
                         />
 
                         {/* Image Info */}

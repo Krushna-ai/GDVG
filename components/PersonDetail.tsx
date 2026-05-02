@@ -1,12 +1,14 @@
 
+'use client';
+
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import type { Person, Content } from '../types';
 import { getFilmographyByPersonId, getPersonByName } from '../services/personService';
 import DramaCard from './DramaCard';
 import { ArrowLeftIcon } from './icons';
-import SEOHead from './SEO/SEOHead';
 import { getProfileUrl, PLACEHOLDER_PROFILE } from '../lib/tmdbImages';
+import SafeImage from './SafeImage';
 import { getContentUrl } from '../lib/urlHelper';
 import ImageGallery from './ImageGallery';
 import { getTmdbPersonUrl, getImdbPersonUrl, getWikipediaUrl, getWikidataUrl, getInstagramUrl, getTwitterUrl, getFacebookUrl, getTiktokUrl } from '../lib/externalLinks';
@@ -18,24 +20,17 @@ interface PersonDetailProps {
 }
 
 const PersonDetail: React.FC<PersonDetailProps> = ({ person: initialPerson, onBack, onDrama }) => {
-    const { id, name } = useParams(); // Support both new (:id) and legacy (:name) routes
-    const navigate = useNavigate();
+    const router = useRouter();
     const [person, setPerson] = useState<Person | null>(initialPerson || null);
     const [works, setWorks] = useState<Content[]>([]);
     const [worksLoading, setWorksLoading] = useState(true);
     const [showAllAkas, setShowAllAkas] = useState(false);
 
     useEffect(() => {
-        if (!initialPerson && (id || name)) {
-            // getPersonByName handles GDVG-ID, UUID, or name lookups
-            const param = id || name;
-            if (param) {
-                getPersonByName(param).then(p => setPerson(p));
-            }
-        } else {
-            setPerson(initialPerson || null);
+        if (initialPerson) {
+            setPerson(initialPerson);
         }
-    }, [id, name, initialPerson]);
+    }, [initialPerson]);
 
     useEffect(() => {
         if (!person) return;
@@ -58,7 +53,7 @@ const PersonDetail: React.FC<PersonDetailProps> = ({ person: initialPerson, onBa
         if (onBack) {
             onBack();
         } else {
-            navigate(-1);
+            router.back();
         }
     };
 
@@ -66,7 +61,7 @@ const PersonDetail: React.FC<PersonDetailProps> = ({ person: initialPerson, onBa
         if (onDrama) {
             onDrama(content);
         } else {
-            navigate(getContentUrl(content));
+            router.push(getContentUrl(content));
         }
     };
 
@@ -77,13 +72,6 @@ const PersonDetail: React.FC<PersonDetailProps> = ({ person: initialPerson, onBa
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
-            <SEOHead
-                title={person.name}
-                description={person.biography || `Learn more about ${person.name}`}
-                image={profileUrl}
-                type="profile"
-                person={person}
-            />
 
             <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/50 to-black"></div>
@@ -98,10 +86,12 @@ const PersonDetail: React.FC<PersonDetailProps> = ({ person: initialPerson, onBa
                 <div className="relative container mx-auto px-6 py-24">
                     <div className="flex flex-col md:flex-row gap-12">
                         <div className="flex-shrink-0">
-                            <img
+                            <SafeImage
                                 src={profileUrl}
                                 alt={person.name}
-                                className="w-64 h-96 object-cover rounded-lg shadow-2xl"
+                                width={256}
+                                height={384}
+                                className="object-cover rounded-lg shadow-2xl"
                             />
                         </div>
 

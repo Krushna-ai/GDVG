@@ -4,6 +4,7 @@ import type { Person } from '../types';
 import { fetchAllPeople } from '../services/personService';
 import { ChevronDownIcon } from './icons';
 import { getProfileUrl, PLACEHOLDER_PROFILE } from '../lib/tmdbImages';
+import SafeImage from './SafeImage';
 
 interface PeoplePageProps {
   onPersonClick: (person: Person) => void;
@@ -133,11 +134,12 @@ const PeoplePage: React.FC<PeoplePageProps> = ({ onPersonClick }) => {
                   onClick={() => onPersonClick(person)}
                 >
                   <div className="rounded-lg overflow-hidden border-2 border-transparent group-hover:border-red-600 transition duration-300 relative aspect-[2/3]">
-                    <img
+                    <SafeImage
                       src={profileImage}
                       alt={person.name}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      onError={(e) => { e.currentTarget.src = PLACEHOLDER_PROFILE; }}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
                       <p className="text-white font-bold text-lg">{person.name}</p>

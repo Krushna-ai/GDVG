@@ -1,4 +1,7 @@
+'use client';
+
 import React, { useState } from 'react';
+import SafeImage from './SafeImage';
 
 interface Provider {
     logo_path: string;
@@ -104,10 +107,12 @@ const WatchProvidersRegional: React.FC<WatchProvidersRegionalProps> = ({
                             title={provider.provider_name}
                         >
                             <div className="relative">
-                                <img
+                                <SafeImage
                                     src={`${TMDB_LOGO_BASE}${provider.logo_path}`}
                                     alt={provider.provider_name}
-                                    className="w-16 h-16 rounded-lg object-cover shadow-lg group-hover:scale-110 transition-transform"
+                                    width={64}
+                                    height={64}
+                                    className="rounded-lg object-cover shadow-lg group-hover:scale-110 transition-transform"
                                 />
                             </div>
                             <span className="text-xs text-gray-400 text-center max-w-[80px] truncate">

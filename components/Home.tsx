@@ -1,12 +1,13 @@
 
+'use client';
+
 import React from 'react';
 import Hero from './Hero';
 import Carousel from './Carousel';
 import type { Content } from '../types';
 import type { Session } from '@supabase/supabase-js';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { getContentUrl } from '../lib/urlHelper';
-import SEOHead from './SEO/SEOHead';
 
 interface HomeProps {
     dramas: Content[];
@@ -34,9 +35,9 @@ const Home: React.FC<HomeProps> = ({
     onToggleMyList,
     onDramaClick
 }) => {
-    const navigate = useNavigate();
+    const router = useRouter();
 
-    const handleDramaClick = onDramaClick || ((d) => navigate(getContentUrl(d)));
+    const handleDramaClick = onDramaClick || ((d: Content) => router.push(getContentUrl(d)));
 
     const featuredDrama = dramas.length > 0 ? dramas[0] : null;
     const trendingDramas = dramas.slice(1, 11);
@@ -52,11 +53,6 @@ const Home: React.FC<HomeProps> = ({
 
     return (
         <div className="animate-fadeIn">
-            <SEOHead
-                title="Watch Movies & TV Series Online"
-                description="Global Drama Verse Guide (GDVG) is your ultimate destination for tracking, discovering, and watching the best TV series and movies globally. Explore K-Dramas, Anime, Western Series, and more."
-                type="website"
-            />
             {featuredDrama && (
                 <Hero
                     drama={featuredDrama}

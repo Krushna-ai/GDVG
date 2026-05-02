@@ -5,6 +5,7 @@ import type { Session } from '@supabase/supabase-js';
 import { fetchDiscussions, createDiscussion } from '../services/contentService';
 import { getUserProfile } from '../services/userService';
 import { UserIcon, PlusIcon } from './icons';
+import SafeImage from './SafeImage';
 
 interface DiscussionSectionProps {
   dramaId: string; // Changed to string
@@ -126,7 +127,7 @@ const DiscussionSection: React.FC<DiscussionSectionProps> = ({ dramaId, session,
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0">
                   {disc.userAvatar ? (
-                    <img src={disc.userAvatar} alt="User" className="w-10 h-10 rounded-full border border-gray-700" />
+                    <SafeImage src={disc.userAvatar} alt="User" width={40} height={40} className="rounded-full border border-gray-700" />
                   ) : (
                     <div className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center text-gray-500"><UserIcon /></div>
                   )}

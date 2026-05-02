@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabase';
 import { XIcon, GoogleIcon } from './icons';
 
 interface AuthModalProps {
@@ -23,7 +23,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, showNotification
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { error } = await getSupabaseClient().auth.signUp({
           email,
           password,
         });
@@ -31,7 +31,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, showNotification
         showNotification('success', 'Sign up successful! You are logged in.');
         onClose();
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error } = await getSupabaseClient().auth.signInWithPassword({
           email,
           password,
         });
@@ -48,7 +48,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, showNotification
 
   const handleGoogleLogin = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { error } = await getSupabaseClient().auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: window.location.origin,

@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import DramaCard from './DramaCard';
 import type { Content, WatchStatus, UserListEntry } from '../types';
 import { fetchUserList } from '../services/listService';
-import { supabase } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabase';
 import { PlusIcon } from './icons';
 
 interface MyListPageProps {
@@ -18,7 +18,7 @@ const MyListPage: React.FC<MyListPageProps> = ({ dramas, onDramaClick, isLoading
 
   useEffect(() => {
     const loadStatus = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await getSupabaseClient().auth.getSession();
       if (session) {
         const list = await fetchUserList(session.user.id);
         setUserList(list);

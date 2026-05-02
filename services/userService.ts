@@ -1,22 +1,20 @@
-
-import { supabase } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { UserProfile } from '../types';
 
-export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
-  const { data, error } = await supabase
+export const getUserProfile = async (userId: string, client?: SupabaseClient): Promise<UserProfile | null> => {
+  const sb = client || getSupabaseClient();
+  const { data, error } = await sb
     .from('user_profiles')
     .select('*')
     .eq('id', userId)
     .single();
 
-  if (error && error.code !== 'PGRST116') { // PGRST116 is "Row not found"
-    // Silently warn, don't crash
+  if (error && error.code !== 'PGRST116') {
     console.warn('Profile fetch warning:', error.message);
     return null;
   }
 
-  // If profile doesn't exist in DB, return a virtual one (don't try to insert immediately to avoid errors)
-  // The App.tsx will detect this 'null' or 'missing' state and trigger the Onboarding Modal.
   if (!data) {
       return null;
   }
@@ -29,10 +27,9 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
   };
 };
 
-export const createDefaultProfile = async (userId: string): Promise<UserProfile | null> => {
-    // DEPRECATED: Logic moved to OnboardingModal to avoid race conditions and RLS errors.
-    // Just returning a virtual profile for immediate UI feedback if needed.
-    const { data: { user } } = await supabase.auth.getUser();
+export const createDefaultProfile = async (userId: string, client?: SupabaseClient): Promise<UserProfile | null> => {
+    const sb = client || getSupabaseClient();
+    const { data: { user } } = await sb.auth.getUser();
     return {
         id: userId,
         username: user?.email?.split('@')[0] || 'User',
@@ -41,8 +38,9 @@ export const createDefaultProfile = async (userId: string): Promise<UserProfile 
     };
 };
 
-export const updateUserProfile = async (userId: string, updates: { username?: string; avatarUrl?: string }): Promise<UserProfile> => {
-  const { data, error } = await supabase
+export const updateUserProfile = async (userId: string, updates: { username?: string; avatarUrl?: string }, client?: SupabaseClient): Promise<UserProfile> => {
+  const sb = client || getSupabaseClient();
+  const { data, error } = await sb
     .from('user_profiles')
     .update({
       username: updates.username,
@@ -63,21 +61,19 @@ export const updateUserProfile = async (userId: string, updates: { username?: st
   };
 };
 
-// Robust function to Insert or Update a profile
-export const upsertUserProfile = async (userId: string, profile: { username: string; avatarUrl: string; email?: string }): Promise<UserProfile> => {
+export const upsertUserProfile = async (userId: string, profile: { username: string; avatarUrl: string; email?: string }, client?: SupabaseClient): Promise<UserProfile> => {
+    const sb = client || getSupabaseClient();
     const payload: any = {
         id: userId,
         username: profile.username,
         avatar_url: profile.avatarUrl,
-        // We let the database handle 'updated_at' automatically via its default value
     };
 
-    // Include email if provided (required for new profiles due to NOT NULL constraint)
     if (profile.email) {
         payload.email = profile.email;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await sb
         .from('user_profiles')
         .upsert(payload)
         .select()
@@ -93,9 +89,10 @@ export const upsertUserProfile = async (userId: string, profile: { username: str
     };
 };
 
-export const syncGoogleUserData = async (userId: string, metadata: any) => {
+export const syncGoogleUserData = async (userId: string, metadata: any, client?: SupabaseClient) => {
     try {
-        const { data: currentProfile } = await supabase
+        const sb = client || getSupabaseClient();
+        const { data: currentProfile } = await sb
             .from('user_profiles')
             .select('avatar_url, username')
             .eq('id', userId)
@@ -106,8 +103,7 @@ export const syncGoogleUserData = async (userId: string, metadata: any) => {
         const googleEmail = metadata.email;
 
         if (!currentProfile) {
-            // Attempt creation, but ignore RLS errors silently
-            await supabase.from('user_profiles').upsert({
+            await sb.from('user_profiles').upsert({
                 id: userId,
                 username: googleName,
                 avatar_url: googleAvatar || `https://api.dicebear.com/9.x/adventurer/svg?seed=${userId}`,

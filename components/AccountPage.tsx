@@ -1,8 +1,12 @@
 
+'use client';
+
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Session } from '@supabase/supabase-js';
 import { UserCircleIcon } from './icons';
 import { getUserProfile, updateUserProfile } from '../services/userService';
+import SafeImage from './SafeImage';
 import type { UserProfile } from '../types';
 
 interface AccountPageProps {
@@ -23,6 +27,7 @@ const AVATAR_PRESETS = [
 ];
 
 const AccountPage: React.FC<AccountPageProps> = ({ session, onNavigate, onSignOut }) => {
+  const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
@@ -69,7 +74,7 @@ const AccountPage: React.FC<AccountPageProps> = ({ session, onNavigate, onSignOu
           <div className="min-h-screen bg-[#0b0b0b] flex items-center justify-center">
               <div className="text-center">
                   <h1 className="text-2xl text-white mb-4">Please sign in to view your account</h1>
-                  <button onClick={() => onNavigate('home')} className="text-red-600 hover:underline">Go Home</button>
+                  <button onClick={() => router.push('/')} className="text-red-600 hover:underline">Go Home</button>
               </div>
           </div>
       );
@@ -85,7 +90,7 @@ const AccountPage: React.FC<AccountPageProps> = ({ session, onNavigate, onSignOu
             <div className="col-span-1 flex flex-col items-center">
                 <div className="w-40 h-40 rounded bg-gray-800 mb-4 overflow-hidden border-2 border-gray-700 relative group">
                     {profile?.avatarUrl ? (
-                        <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                        <SafeImage src={profile.avatarUrl} alt="Avatar" fill className="object-cover" />
                     ) : (
                         <UserCircleIcon />
                     )}
@@ -93,13 +98,9 @@ const AccountPage: React.FC<AccountPageProps> = ({ session, onNavigate, onSignOu
                 <p className="text-sm text-gray-400 mb-4">Choose an Avatar</p>
                 <div className="grid grid-cols-4 gap-2">
                     {AVATAR_PRESETS.map((url, idx) => (
-                        <img 
-                            key={idx} 
-                            src={url} 
-                            alt="Preset" 
-                            className="w-10 h-10 rounded-full cursor-pointer border border-transparent hover:border-white transition"
-                            onClick={() => handleAvatarSelect(url)}
-                        />
+                        <div key={idx} className="w-10 h-10 rounded-full cursor-pointer border border-transparent hover:border-white transition overflow-hidden relative" onClick={() => handleAvatarSelect(url)}>
+                            <SafeImage src={url} alt="Preset" width={40} height={40} className="object-cover" />
+                        </div>
                     ))}
                 </div>
             </div>
@@ -139,7 +140,7 @@ const AccountPage: React.FC<AccountPageProps> = ({ session, onNavigate, onSignOu
                         {loading ? 'Saving...' : 'Save Profile'}
                     </button>
                     <button 
-                        onClick={() => onNavigate('home')}
+                        onClick={() => router.push('/')}
                         className="bg-transparent border border-gray-600 text-white font-bold py-2 px-6 rounded hover:border-white transition"
                     >
                         Cancel

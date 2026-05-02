@@ -87,6 +87,11 @@ export interface Content {
   wiki_soundtrack?: string | null;
   wikipedia_url?: string | null;
   wikidata_id?: string | null;
+  watch_providers?: any;
+  images?: any;
+  spoken_languages?: any[];
+  production_countries?: any[];
+  alternative_titles?: any[];
   created_at?: string;
   updated_at?: string;
 }
@@ -126,6 +131,9 @@ export interface Person {
     tiktok?: string;
   };
   combined_credits_count?: number; // NEW: Total filmography size for sorting
+  wikipedia_url?: string | null;
+  images?: any;
+  bio_source?: string | null;
   created_at?: string;
   updated_at?: string;
 }

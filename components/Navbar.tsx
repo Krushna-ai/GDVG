@@ -1,7 +1,10 @@
 
+'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { SearchIcon, BellIcon, UserCircleIcon, MenuIcon, XIcon } from './icons';
+import SafeImage from './SafeImage';
 import type { Session } from '@supabase/supabase-js';
 import { ADMIN_EMAIL } from '../lib/constants';
 import { getUserProfile } from '../services/userService';
@@ -94,11 +97,11 @@ const Navbar: React.FC<NavbarProps> = ({
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/" onClick={(e) => { e.preventDefault(); onNavigate('home'); }} className={navLinkClass('home')}>Home</Link>
-            <Link to="/series" onClick={(e) => { e.preventDefault(); onNavigate('series'); }} className={navLinkClass('series')}>Series</Link>
-            <Link to="/movies" onClick={(e) => { e.preventDefault(); onNavigate('films'); }} className={navLinkClass('films')}>Films</Link>
-            <Link to="/people" onClick={(e) => { e.preventDefault(); onNavigate('people_catalog'); }} className={navLinkClass('people_catalog')}>Celebs</Link>
-            <Link to="/mylist" onClick={(e) => { e.preventDefault(); onNavigate('mylist'); }} className={navLinkClass('mylist')}>My List</Link>
+            <Link href="/" onClick={(e) => { e.preventDefault(); onNavigate('home'); }} className={navLinkClass('home')}>Home</Link>
+            <Link href="/series" onClick={(e) => { e.preventDefault(); onNavigate('series'); }} className={navLinkClass('series')}>Series</Link>
+            <Link href="/movies" onClick={(e) => { e.preventDefault(); onNavigate('films'); }} className={navLinkClass('films')}>Films</Link>
+            <Link href="/people" onClick={(e) => { e.preventDefault(); onNavigate('people_catalog'); }} className={navLinkClass('people_catalog')}>Celebs</Link>
+            <Link href="/mylist" onClick={(e) => { e.preventDefault(); onNavigate('mylist'); }} className={navLinkClass('mylist')}>My List</Link>
           </nav>
         </div>
 
@@ -123,7 +126,7 @@ const Navbar: React.FC<NavbarProps> = ({
               className="flex items-center focus:outline-none hover:scale-105 transition rounded"
             >
               {avatarUrl ? (
-                <img src={avatarUrl} alt="Profile" className="w-8 h-8 rounded border border-gray-600" />
+                <SafeImage src={avatarUrl} alt="Profile" width={32} height={32} className="w-8 h-8 rounded border border-gray-600" />
               ) : (
                 <UserCircleIcon />
               )}
@@ -196,11 +199,11 @@ const Navbar: React.FC<NavbarProps> = ({
             </button>
           </div>
           <nav className="flex-grow flex flex-col p-8 space-y-4">
-            <Link to="/" onClick={(e) => { e.preventDefault(); onNavigate('home'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('home')}>Home</Link>
-            <Link to="/series" onClick={(e) => { e.preventDefault(); onNavigate('series'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('series')}>Series</Link>
-            <Link to="/movies" onClick={(e) => { e.preventDefault(); onNavigate('films'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('films')}>Films</Link>
-            <Link to="/people" onClick={(e) => { e.preventDefault(); onNavigate('people_catalog'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('people_catalog')}>Celebs</Link>
-            <Link to="/mylist" onClick={(e) => { e.preventDefault(); onNavigate('mylist'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('mylist')}>My List</Link>
+            <Link href="/" onClick={(e) => { e.preventDefault(); onNavigate('home'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('home')}>Home</Link>
+            <Link href="/series" onClick={(e) => { e.preventDefault(); onNavigate('series'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('series')}>Series</Link>
+            <Link href="/movies" onClick={(e) => { e.preventDefault(); onNavigate('films'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('films')}>Films</Link>
+            <Link href="/people" onClick={(e) => { e.preventDefault(); onNavigate('people_catalog'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('people_catalog')}>Celebs</Link>
+            <Link href="/mylist" onClick={(e) => { e.preventDefault(); onNavigate('mylist'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('mylist')}>My List</Link>
             <button onClick={() => { onSurpriseClick(); setIsMobileMenuOpen(false); }} className="text-xl font-medium text-yellow-500 py-2">🎲 Shuffle Pick</button>
             {session && (
               <button onClick={() => { onNavigate('account'); setIsMobileMenuOpen(false); }} className="text-xl font-medium text-gray-300 py-2">Account</button>

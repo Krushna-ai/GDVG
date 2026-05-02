@@ -1,9 +1,10 @@
-
-import { supabase } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { UserListEntry, WatchStatus } from '../types';
 
-export const fetchUserList = async (userId: string): Promise<UserListEntry[]> => {
-  const { data, error } = await supabase
+export const fetchUserList = async (userId: string, client?: SupabaseClient): Promise<UserListEntry[]> => {
+  const sb = client || getSupabaseClient();
+  const { data, error } = await sb
     .from('favorites')
     .select('*')
     .eq('user_id', userId);
@@ -14,8 +15,8 @@ export const fetchUserList = async (userId: string): Promise<UserListEntry[]> =>
   }
 
   return (data || []).map((row: any) => ({
-    id: String(row.id), // Safely convert number/bigint to string
-    dramaId: String(row.drama_id), // Safely convert number/bigint to string
+    id: String(row.id),
+    dramaId: String(row.drama_id),
     userId: row.user_id,
     status: row.status || 'Plan to Watch',
     progress: row.progress || 0,
@@ -26,10 +27,11 @@ export const fetchUserList = async (userId: string): Promise<UserListEntry[]> =>
 export const updateUserListEntry = async (
     userId: string, 
     dramaId: string, 
-    updates: { status: WatchStatus; progress?: number; score?: number }
+    updates: { status: WatchStatus; progress?: number; score?: number },
+    client?: SupabaseClient
 ): Promise<UserListEntry> => {
-    
-    const { data: existing } = await supabase
+    const sb = client || getSupabaseClient();
+    const { data: existing } = await sb
         .from('favorites')
         .select('id')
         .eq('user_id', userId)
@@ -39,7 +41,7 @@ export const updateUserListEntry = async (
     let result;
     
     if (existing) {
-        const { data, error } = await supabase
+        const { data, error } = await sb
             .from('favorites')
             .update(updates)
             .eq('id', existing.id)
@@ -48,7 +50,7 @@ export const updateUserListEntry = async (
         if (error) throw error;
         result = data;
     } else {
-        const { data, error } = await supabase
+        const { data, error } = await sb
             .from('favorites')
             .insert({
                 user_id: userId,
@@ -71,8 +73,9 @@ export const updateUserListEntry = async (
     };
 };
 
-export const removeFromUserList = async (userId: string, dramaId: string): Promise<void> => {
-    const { error } = await supabase
+export const removeFromUserList = async (userId: string, dramaId: string, client?: SupabaseClient): Promise<void> => {
+    const sb = client || getSupabaseClient();
+    const { error } = await sb
         .from('favorites')
         .delete()
         .eq('user_id', userId)

@@ -3,7 +3,8 @@
  * Unified service for querying content from TMDB-based Supabase schema
  */
 
-import { supabase } from '../lib/supabase';
+import { getSupabaseClient } from '../lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Content, CastMember, CrewMember, Review, Discussion, WatchLink } from '../types';
 import { normalizeContent, normalizeContentArray } from '../lib/contentNormalizer';
 
@@ -12,8 +13,9 @@ import { normalizeContent, normalizeContentArray } from '../lib/contentNormalize
 /**
  * Fetch all published content, ordered by popularity
  */
-export const fetchPublishedContent = async (limit = 100): Promise<Content[]> => {
-    const { data, error } = await supabase
+export const fetchPublishedContent = async (limit = 100, client?: SupabaseClient): Promise<Content[]> => {
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('content')
         .select('*')
         .eq('status', 'published')
@@ -29,9 +31,11 @@ export const fetchPublishedContent = async (limit = 100): Promise<Content[]> => 
  */
 export const fetchContentByType = async (
     contentType: string,
-    limit = 20
+    limit = 20,
+    client?: SupabaseClient
 ): Promise<Content[]> => {
-    const { data, error } = await supabase
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('content')
         .select('*')
         .eq('status', 'published')
@@ -48,9 +52,11 @@ export const fetchContentByType = async (
  */
 export const fetchContentByCountry = async (
     countryCode: string,
-    limit = 20
+    limit = 20,
+    client?: SupabaseClient
 ): Promise<Content[]> => {
-    const { data, error } = await supabase
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('content')
         .select('*')
         .eq('status', 'published')
@@ -65,8 +71,9 @@ export const fetchContentByCountry = async (
 /**
  * Fetch single content by ID (published only for public)
  */
-export const fetchContentById = async (id: string): Promise<Content | null> => {
-    const { data, error } = await supabase
+export const fetchContentById = async (id: string, client?: SupabaseClient): Promise<Content | null> => {
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('content')
         .select('*')
         .eq('id', id)
@@ -80,10 +87,11 @@ export const fetchContentById = async (id: string): Promise<Content | null> => {
 /**
  * Fetch single content by GDVG-ID (new URL system)
  */
-export const fetchContentByGdvgId = async (gdvgId: number | string): Promise<Content | null> => {
+export const fetchContentByGdvgId = async (gdvgId: number | string, client?: SupabaseClient): Promise<Content | null> => {
     const id = typeof gdvgId === 'string' ? parseInt(gdvgId, 10) : gdvgId;
+    const sb = client || getSupabaseClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await sb
         .from('content')
         .select('*')
         .eq('gdvg_id', id)
@@ -101,23 +109,24 @@ export const fetchContentByGdvgId = async (gdvgId: number | string): Promise<Con
  *   - New slug-shortid format: "title-slug-6a5562cf" (extracts "6a5562cf")
  *   - Direct UUID: "6a5562cf-7748-43c3-a426-be788f87a5ac"
  */
-export const fetchContentBySlug = async (slug: string): Promise<Content | null> => {
+export const fetchContentBySlug = async (slug: string, client?: SupabaseClient): Promise<Content | null> => {
+    const sb = client || getSupabaseClient();
     // Check if it's a pure number (GDVG-ID)
     if (/^\d+$/.test(slug)) {
-        return await fetchContentByGdvgId(parseInt(slug, 10));
+        return await fetchContentByGdvgId(parseInt(slug, 10), client);
     }
 
     // Check if it's a direct full UUID
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
 
     if (isUUID) {
-        return await fetchContentById(slug);
+        return await fetchContentById(slug, client);
     }
 
     // Try to extract full UUID from end (backward compatibility)
     const uuidMatch = slug.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i);
     if (uuidMatch) {
-        return await fetchContentById(uuidMatch[1]);
+        return await fetchContentById(uuidMatch[1], client);
     }
 
     // Check if it's the slug-shortid format (ends with -[8 hex chars])
@@ -125,9 +134,7 @@ export const fetchContentBySlug = async (slug: string): Promise<Content | null> 
     const lastPart = parts[parts.length - 1];
 
     if (/^[0-9a-f]{8}$/i.test(lastPart)) {
-        // New format: extract short ID and search by prefix
-        // Use PostgreSQL LOWER() for reliable case-insensitive matching
-        const { data, error } = await supabase
+        const { data, error } = await sb
             .from('content')
             .select('*')
             .eq('status', 'published')
@@ -141,7 +148,7 @@ export const fetchContentBySlug = async (slug: string): Promise<Content | null> 
     // Fallback to old slug format (title search with underscores)
     const title = slug.replace(/_/g, ' ');
 
-    const { data, error } = await supabase
+    const { data, error } = await sb
         .from('content')
         .select('*')
         .eq('status', 'published')
@@ -155,8 +162,9 @@ export const fetchContentBySlug = async (slug: string): Promise<Content | null> 
 /**
  * Search published content by title
  */
-export const searchContent = async (query: string, limit = 10): Promise<Content[]> => {
-    const { data, error } = await supabase
+export const searchContent = async (query: string, limit = 10, client?: SupabaseClient): Promise<Content[]> => {
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('content')
         .select('id, gdvg_id, title, poster_path, backdrop_path, content_type, release_date, first_air_date, vote_average, origin_country, genres')
         .eq('status', 'published')
@@ -173,27 +181,28 @@ export const searchContent = async (query: string, limit = 10): Promise<Content[
 export const fetchSimilarContent = async (
     contentId: string,
     genres: { id: number; name: string }[] | undefined,
-    limit = 10
+    limit = 10,
+    client?: SupabaseClient
 ): Promise<Content[]> => {
     if (!genres || genres.length === 0) return [];
 
     const genreName = genres[0].name;
+    const sb = client || getSupabaseClient();
 
-    const { data, error } = await supabase
+    const { data, error } = await sb
         .from('content')
         .select('*')
         .eq('status', 'published')
         .neq('id', contentId)
         .order('popularity', { ascending: false })
-        .limit(limit);
+        .limit(50);
 
     if (error) return [];
 
-    // Filter by genre in JS since JSONB containment is tricky
     const normalized = normalizeContentArray(data || []);
     return normalized.filter(item =>
-        item.genres.some((g: any) => g.name === genreName)
-    );
+        item.genres?.some((g: any) => g.name === genreName)
+    ).slice(0, limit);
 };
 
 /**
@@ -201,10 +210,12 @@ export const fetchSimilarContent = async (
  */
 export const fetchRecommendations = async (
     contentId: string,
-    limit = 10
+    limit = 10,
+    client?: SupabaseClient
 ): Promise<Content[]> => {
+    const sb = client || getSupabaseClient();
     // Get the source content with recommendations
-    const { data: source, error: sourceError } = await supabase
+    const { data: source, error: sourceError } = await sb
         .from('content')
         .select('recommendations')
         .eq('id', contentId)
@@ -216,12 +227,12 @@ export const fetchRecommendations = async (
     const tmdbIds = (source.recommendations as any[])
         .map((r: any) => r.tmdb_id)
         .filter(Boolean)
-        .slice(0, limit * 2); // Get more IDs in case some aren't published
+        .slice(0, limit * 2);
 
     if (tmdbIds.length === 0) return [];
 
     // Fetch full content details for published items
-    const { data, error } = await supabase
+    const { data, error } = await sb
         .from('content')
         .select('*')
         .eq('status', 'published')
@@ -238,8 +249,9 @@ export const fetchRecommendations = async (
  * Fetch cast for a content item with person details
  * @param limit - Max cast members to fetch (default 20). Backend enrichment will add 50-200+ cast per content.
  */
-export const fetchContentCast = async (contentId: string, limit = 20): Promise<CastMember[]> => {
-    const { data, error } = await supabase
+export const fetchContentCast = async (contentId: string, limit = 20, client?: SupabaseClient): Promise<CastMember[]> => {
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('content_cast')
         .select(`
       id,
@@ -256,10 +268,7 @@ export const fetchContentCast = async (contentId: string, limit = 20): Promise<C
 
     if (error) return [];
 
-    // Supabase returns joined data as arrays or objects depending on relationship
-    // We cast to any to avoid strict type mismatches with the defined interfaces
     const result = (data || []).map((item: any) => {
-        // Defensive check for the joined relation key (could be 'people' or 'person' depending on PostgREST version/config)
         const rawPerson = item.people || item.person;
         return {
             ...item,
@@ -274,8 +283,9 @@ export const fetchContentCast = async (contentId: string, limit = 20): Promise<C
  * Fetch crew for a content item with person details
  * @param limit - Max crew members to fetch (default 20)
  */
-export const fetchContentCrew = async (contentId: string, limit = 20): Promise<CrewMember[]> => {
-    const { data, error } = await supabase
+export const fetchContentCrew = async (contentId: string, limit = 20, client?: SupabaseClient): Promise<CrewMember[]> => {
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('content_crew')
         .select(`
       id,
@@ -304,8 +314,9 @@ export const fetchContentCrew = async (contentId: string, limit = 20): Promise<C
 /**
  * Fetch all content (admin use)
  */
-export const fetchAllContent = async (): Promise<Content[]> => {
-    const { data, error } = await supabase
+export const fetchAllContent = async (client?: SupabaseClient): Promise<Content[]> => {
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('content')
         .select('*')
         .order('created_at', { ascending: false });
@@ -317,8 +328,9 @@ export const fetchAllContent = async (): Promise<Content[]> => {
 /**
  * Add new content (admin use)
  */
-export const addContent = async (content: Partial<Content>): Promise<Content> => {
-    const { data, error } = await supabase
+export const addContent = async (content: Partial<Content>, client?: SupabaseClient): Promise<Content> => {
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('content')
         .insert(content)
         .select()
@@ -331,8 +343,9 @@ export const addContent = async (content: Partial<Content>): Promise<Content> =>
 /**
  * Update content (admin use)
  */
-export const updateContent = async (id: string, content: Partial<Content>): Promise<Content> => {
-    const { data, error } = await supabase
+export const updateContent = async (id: string, content: Partial<Content>, client?: SupabaseClient): Promise<Content> => {
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('content')
         .update({ ...content, updated_at: new Date().toISOString() })
         .eq('id', id)
@@ -346,8 +359,9 @@ export const updateContent = async (id: string, content: Partial<Content>): Prom
 /**
  * Delete content (admin use)
  */
-export const deleteContent = async (id: string): Promise<void> => {
-    const { error } = await supabase.from('content').delete().eq('id', id);
+export const deleteContent = async (id: string, client?: SupabaseClient): Promise<void> => {
+    const sb = client || getSupabaseClient();
+    const { error } = await sb.from('content').delete().eq('id', id);
     if (error) throw error;
 };
 
@@ -356,8 +370,9 @@ export const deleteContent = async (id: string): Promise<void> => {
 /**
  * Get top rated published content
  */
-export const fetchTopRated = async (limit = 10): Promise<Content[]> => {
-    const { data, error } = await supabase
+export const fetchTopRated = async (limit = 10, client?: SupabaseClient): Promise<Content[]> => {
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('content')
         .select('*')
         .eq('status', 'published')
@@ -371,8 +386,9 @@ export const fetchTopRated = async (limit = 10): Promise<Content[]> => {
 /**
  * Get recently added published content
  */
-export const fetchRecentlyAdded = async (limit = 10): Promise<Content[]> => {
-    const { data, error } = await supabase
+export const fetchRecentlyAdded = async (limit = 10, client?: SupabaseClient): Promise<Content[]> => {
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('content')
         .select('*')
         .eq('status', 'published')
@@ -385,8 +401,9 @@ export const fetchRecentlyAdded = async (limit = 10): Promise<Content[]> => {
 
 // ============ Reviews & Discussions ============
 
-export const fetchReviews = async (contentId: string): Promise<Review[]> => {
-    const { data, error } = await supabase
+export const fetchReviews = async (contentId: string, client?: SupabaseClient): Promise<Review[]> => {
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('reviews')
         .select('*')
         .eq('drama_id', contentId)
@@ -408,8 +425,9 @@ export const fetchReviews = async (contentId: string): Promise<Review[]> => {
     }));
 };
 
-export const addReview = async (review: { dramaId: string, userId: string, userEmail: string, rating: number, comment: string }): Promise<Review> => {
-    const { data, error } = await supabase
+export const addReview = async (review: { dramaId: string, userId: string, userEmail: string, rating: number, comment: string }, client?: SupabaseClient): Promise<Review> => {
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('reviews')
         .insert({
             drama_id: review.dramaId,
@@ -434,8 +452,9 @@ export const addReview = async (review: { dramaId: string, userId: string, userE
     };
 };
 
-export const fetchDiscussions = async (contentId: string): Promise<Discussion[]> => {
-    const { data, error } = await supabase
+export const fetchDiscussions = async (contentId: string, client?: SupabaseClient): Promise<Discussion[]> => {
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('discussions')
         .select('*')
         .eq('drama_id', contentId)
@@ -456,8 +475,9 @@ export const fetchDiscussions = async (contentId: string): Promise<Discussion[]>
     }));
 };
 
-export const createDiscussion = async (discussion: { dramaId: string, userId: string, title: string, body: string }): Promise<Discussion> => {
-    const { data, error } = await supabase
+export const createDiscussion = async (discussion: { dramaId: string, userId: string, title: string, body: string }, client?: SupabaseClient): Promise<Discussion> => {
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('discussions')
         .insert({
             drama_id: discussion.dramaId,
@@ -485,8 +505,9 @@ export const createDiscussion = async (discussion: { dramaId: string, userId: st
 /**
  * Fetch streaming/watch links for a content item
  */
-export const fetchWatchLinks = async (contentId: string): Promise<WatchLink[]> => {
-    const { data, error } = await supabase
+export const fetchWatchLinks = async (contentId: string, client?: SupabaseClient): Promise<WatchLink[]> => {
+    const sb = client || getSupabaseClient();
+    const { data, error } = await sb
         .from('content_watch_links')
         .select('*')
         .eq('content_id', contentId)

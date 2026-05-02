@@ -5,6 +5,7 @@ import type { Session } from '@supabase/supabase-js';
 import { fetchReviews, addReview } from '../services/contentService';
 import { getUserProfile } from '../services/userService';
 import { StarIcon, UserIcon } from './icons';
+import SafeImage from './SafeImage';
 
 interface ReviewSectionProps {
   dramaId: string; // Changed to string
@@ -147,7 +148,7 @@ const ReviewSection: React.FC<ReviewSectionProps> = ({ dramaId, session, onOpenA
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-3">
                   {review.userAvatar ? (
-                    <img src={review.userAvatar} alt="User" className="w-8 h-8 rounded-full" />
+                    <SafeImage src={review.userAvatar} alt="User" width={32} height={32} className="rounded-full" />
                   ) : (
                     <div className="bg-gray-700 p-1 rounded-full">
                       <UserIcon />

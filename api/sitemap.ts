@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
-const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const SITE_URL = 'https://gdvg-ten.vercel.app';
+const SITE_URL = process.env.SITE_URL || 'https://gdvg-ten.vercel.app';
 const URLS_PER_SITEMAP = 45000;
 
 function createSlug(title: string) {
@@ -22,8 +22,8 @@ export default async function handler(req: any, res: any) {
     if (!type) {
         try {
             // Get total counts to know how many pages
-            const { count: moviesCount } = await supabase.from('contents').select('id', { count: 'exact', head: true }).eq('content_type', 'movie');
-            const { count: seriesCount } = await supabase.from('contents').select('id', { count: 'exact', head: true }).in('content_type', ['tv', 'drama', 'anime', 'variety', 'documentary']);
+            const { count: moviesCount } = await supabase.from('content').select('id', { count: 'exact', head: true }).eq('content_type', 'movie');
+            const { count: seriesCount } = await supabase.from('content').select('id', { count: 'exact', head: true }).in('content_type', ['tv', 'drama', 'anime', 'variety', 'documentary']);
             const { count: peopleCount } = await supabase.from('people').select('id', { count: 'exact', head: true });
 
             const moviePages = Math.ceil((moviesCount || 0) / URLS_PER_SITEMAP);
@@ -65,7 +65,7 @@ export default async function handler(req: any, res: any) {
             const contentTypes = type === 'movies' ? ['movie'] : ['tv', 'drama', 'anime', 'variety', 'documentary'];
 
             const { data, error } = await supabase
-                .from('contents')
+                .from('content')
                 .select('gdvg_id, title, updated_at, content_type')
                 .in('content_type', contentTypes)
                 .range(offset, offset + URLS_PER_SITEMAP - 1)
