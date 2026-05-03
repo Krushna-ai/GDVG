@@ -5,27 +5,33 @@
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
 
+const isFullUrl = (path: string) => path.startsWith('http://') || path.startsWith('https://');
+
 // Poster sizes: w92, w154, w185, w342, w500, w780, original
 export const getPosterUrl = (path?: string | null, size = 'w500'): string | null => {
     if (!path) return null;
+    if (isFullUrl(path)) return path;
     return `${TMDB_IMAGE_BASE}/${size}${path}`;
 };
 
 // Backdrop sizes: w300, w780, w1280, original
 export const getBackdropUrl = (path?: string | null, size = 'w1280'): string | null => {
     if (!path) return null;
+    if (isFullUrl(path)) return path;
     return `${TMDB_IMAGE_BASE}/${size}${path}`;
 };
 
 // Profile sizes: w45, w185, h632, original
 export const getProfileUrl = (path?: string | null, size = 'w185'): string | null => {
     if (!path) return null;
+    if (isFullUrl(path)) return path;
     return `${TMDB_IMAGE_BASE}/${size}${path}`;
 };
 
 // Logo sizes: w45, w92, w154, w185, w300, w500, original
 export const getLogoUrl = (path?: string | null, size = 'w185'): string | null => {
     if (!path) return null;
+    if (isFullUrl(path)) return path;
     return `${TMDB_IMAGE_BASE}/${size}${path}`;
 };
 

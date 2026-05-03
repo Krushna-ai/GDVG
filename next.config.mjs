@@ -14,6 +14,11 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 's4.anilist.co',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'api.dicebear.com',
         pathname: '/**',
       },
