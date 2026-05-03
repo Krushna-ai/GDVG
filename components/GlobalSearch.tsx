@@ -1,11 +1,12 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { XIcon, SearchIcon } from './icons';
 import type { Content, Person } from '../types';
-import { searchContent } from '../services/contentService';
-import { searchPeople } from '../services/personService';
 import { getPosterUrl, getProfileUrl, PLACEHOLDER_POSTER, PLACEHOLDER_PROFILE } from '../lib/tmdbImages';
 import SafeImage from './SafeImage';
+
+interface SearchResult extends Partial<Content> {
+  similarity_score?: number;
+}
 
 interface GlobalSearchProps {
   isOpen: boolean;
@@ -16,7 +17,7 @@ interface GlobalSearchProps {
 
 const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, onDramaClick, onPersonClick }) => {
   const [query, setQuery] = useState('');
-  const [content, setContent] = useState<Partial<Content>[]>([]);
+  const [content, setContent] = useState<SearchResult[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -43,12 +44,14 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, onDramaCli
 
       setLoading(true);
       try {
-        const [contentData, peopleData] = await Promise.all([
-          searchContent(query),
-          searchPeople(query)
-        ]);
-        setContent(contentData);
-        setPeople(peopleData);
+        const res = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, limit: 20 }),
+        });
+        const data = await res.json();
+        setContent(data.content ?? []);
+        setPeople(data.people ?? []);
       } catch (error) {
         console.error("Search error", error);
       } finally {
@@ -142,6 +145,11 @@ const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose, onDramaCli
                     />
                     <div className="p-4 flex flex-col justify-center">
                       <h4 className="text-white font-bold text-lg group-hover:text-red-500 transition">{item.title}</h4>
+                      {(item.similarity_score ?? 0) > 0 && (
+                        <span className="inline-block mt-1 px-1.5 py-0.5 text-[10px] font-semibold rounded bg-purple-900/60 text-purple-300 border border-purple-700/50">
+                          ✨ AI
+                        </span>
+                      )}
                       <div className="text-gray-400 text-sm mt-1">
                         {getYear(item)} {getCountry(item) && `• ${getCountry(item)}`}
                       </div>

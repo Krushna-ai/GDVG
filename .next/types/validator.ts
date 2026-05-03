@@ -146,6 +146,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../app/api/search/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/search">> = Specific
+  const handler = {} as typeof import("../../app/api/search/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../app/api/sitemap/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/sitemap">> = Specific

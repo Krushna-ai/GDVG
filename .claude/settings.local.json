@@ -6,7 +6,8 @@
       "mcp__kimi-code__kimi_read_file",
       "mcp__kimi-code__kimi_agent",
       "mcp__kimi-code__kimi_research",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "mcp__kimi-code__kimi_shell"
     ]
   }
 }
