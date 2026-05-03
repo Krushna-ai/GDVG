@@ -7,7 +7,11 @@
       "mcp__kimi-code__kimi_agent",
       "mcp__kimi-code__kimi_research",
       "Bash(npm run *)",
-      "mcp__kimi-code__kimi_shell"
+      "mcp__kimi-code__kimi_shell",
+      "Bash(git -C \"d:\\\\GDVG Projects\\\\GDVG-\\(Main\\)\" ls-files --error-unmatch .next)",
+      "Bash(git -C \"d:\\\\GDVG Projects\\\\GDVG-\\(Main\\)\" log --oneline --all -- \".next\")",
+      "Bash(git *)",
+      "Bash(Remove-Item *)"
     ]
   }
 }

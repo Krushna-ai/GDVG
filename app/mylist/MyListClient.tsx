@@ -1,14 +1,47 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import MyListPage from '@/components/MyListPage';
 import { useApp } from '../AppContext';
 import { getContentUrl } from '@/lib/urlHelper';
+import { getSupabaseClient } from '@/lib/supabase';
+import { normalizeContentArray } from '@/lib/contentNormalizer';
+import type { Content } from '@/types';
 
 export default function MyListClient() {
   const router = useRouter();
-  const { session } = useApp();
+  const { session, myListIds, isLoadingList } = useApp();
+  const [dramas, setDramas] = useState<Content[]>([]);
+  const [isFetchingContent, setIsFetchingContent] = useState(false);
+
+  useEffect(() => {
+    if (!session || myListIds.length === 0) {
+      setDramas([]);
+      return;
+    }
+
+    const fetchListContent = async () => {
+      setIsFetchingContent(true);
+      try {
+        const { data, error } = await getSupabaseClient()
+          .from('content')
+          .select('*')
+          .in('id', myListIds)
+          .eq('status', 'published');
+
+        if (!error && data) {
+          setDramas(normalizeContentArray(data));
+        }
+      } catch (err) {
+        console.error('Failed to fetch list content:', err);
+      } finally {
+        setIsFetchingContent(false);
+      }
+    };
+
+    fetchListContent();
+  }, [session, myListIds]);
 
   if (!session) {
     return (
@@ -28,9 +61,9 @@ export default function MyListClient() {
 
   return (
     <MyListPage
-      dramas={[]}
+      dramas={dramas}
       onDramaClick={(d) => router.push(getContentUrl(d))}
-      isLoading={false}
+      isLoading={isLoadingList || isFetchingContent}
     />
   );
 }
