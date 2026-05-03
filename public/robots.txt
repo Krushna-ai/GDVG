@@ -1,6 +1,12 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
 Allow: /
 
-# Sitemap location
-Sitemap: https://gdvg-ten.vercel.app/sitemap.xml
+# Private pages — no indexing needed
+Disallow: /account
+Disallow: /mylist
+
+# Block API except the sitemap
+Disallow: /api/
+Allow: /api/sitemap
+
+Sitemap: https://gdvg-ten.vercel.app/api/sitemap
