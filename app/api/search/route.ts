@@ -114,7 +114,8 @@ export async function POST(request: NextRequest) {
     const sliced = results.slice(0, limit);
 
     return NextResponse.json({
-      results: sliced,
+      content: sliced,
+      people: [],
       total: sliced.length,
       query,
       semantic,
