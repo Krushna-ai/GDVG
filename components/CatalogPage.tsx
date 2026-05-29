@@ -57,12 +57,10 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ type, dramas, onDramaClick, i
 
   // Filter dramas by content_type
   const categoryDramas = useMemo(() => {
-    if (type === 'Movie') {
-      return dramas.filter(d => d.content_type === 'movie');
-    }
-    // Series includes tv, drama, anime, variety
-    return dramas.filter(d => d.content_type !== 'movie');
-  }, [dramas, type]);
+    // Data is already pre-filtered server-side
+    // by content type — no client filtering needed
+    return dramas;
+  }, [dramas]);
 
   // Extract unique genres (from genre objects)
   const genres = useMemo(() => {
