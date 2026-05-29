@@ -1,13 +1,14 @@
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+
 import { notFound } from 'next/navigation';
 import { generateContentStaticParams } from '@/app/lib/staticParams';
 import { getContentDetail, generateContentMetadata, renderContentJsonLd } from '@/app/lib/contentDetailHelpers';
 import DramaDetailClient from '@/app/DramaDetailClient';
 import type { Metadata } from 'next';
 
-export const revalidate = 86400;
-
 export async function generateStaticParams() {
-  return generateContentStaticParams(['anime'], 1000);
+  return [];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string; slug: string }> }): Promise<Metadata> {

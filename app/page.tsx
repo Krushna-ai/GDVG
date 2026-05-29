@@ -1,9 +1,10 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { fetchPublishedContent, fetchTopRated, fetchRecentlyAdded } from '@/services/contentService';
 import HomePageClient from './HomePageClient';
-
-export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: 'Watch Movies & TV Series Online',
