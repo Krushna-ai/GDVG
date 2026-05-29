@@ -1,14 +1,13 @@
 import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
-import { fetchPublishedContent } from '@/services/contentService';
 import SeriesCatalogClient from '../SeriesCatalogClient';
 
 export const metadata: Metadata = {
-  title: 'Dramas',
-  description: 'Browse and discover the best Korean dramas, Asian dramas, and TV series from around the world on Global Drama Verse Guide.',
+  title: 'Anime',
+  description: 'Browse and discover the best anime series and movies from Japan and beyond on GDVG.',
 };
 
-export default async function SeriesCatalogPage({
+export default async function AnimeCatalogPage({
   searchParams,
 }: {
   searchParams: Promise<{ genre?: string }>;
@@ -22,7 +21,7 @@ export default async function SeriesCatalogPage({
       .from('content')
       .select('*')
       .eq('status', 'published')
-      .in('content_type', ['tv', 'drama'])
+      .eq('content_type', 'anime')
       .order('popularity', { ascending: false })
       .limit(1000);
     dramas = data || [];
@@ -30,14 +29,16 @@ export default async function SeriesCatalogPage({
       <SeriesCatalogClient
         dramas={dramas}
         initialGenre={params.genre || null}
+        type="Anime"
       />
     );
   } catch (error) {
-    console.warn('Series catalog data fetch failed - Supabase may not be configured:', error);
+    console.warn('Anime catalog fetch failed:', error);
     return (
       <SeriesCatalogClient
         dramas={[]}
         initialGenre={null}
+        type="Anime"
       />
     );
   }

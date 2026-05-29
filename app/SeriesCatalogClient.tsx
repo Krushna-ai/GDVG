@@ -9,9 +9,10 @@ import { getContentUrl } from '@/lib/urlHelper';
 interface SeriesCatalogClientProps {
   dramas: Content[];
   initialGenre: string | null;
+  type?: string;
 }
 
-export default function SeriesCatalogClient({ dramas, initialGenre }: SeriesCatalogClientProps) {
+export default function SeriesCatalogClient({ dramas, initialGenre, type = 'Dramas' }: SeriesCatalogClientProps) {
   const router = useRouter();
 
   const handleDramaClick = (drama: Content) => {
@@ -20,7 +21,7 @@ export default function SeriesCatalogClient({ dramas, initialGenre }: SeriesCata
 
   return (
     <CatalogPage
-      type="Series"
+      type={type}
       dramas={dramas}
       onDramaClick={handleDramaClick}
       initialGenre={initialGenre}

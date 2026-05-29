@@ -18,7 +18,14 @@ export default async function MoviesCatalogPage({
   try {
     const supabase = await createClient();
     const params = await searchParams;
-    dramas = await fetchPublishedContent(1000, supabase);
+    const { data } = await supabase
+      .from('content')
+      .select('*')
+      .eq('status', 'published')
+      .eq('content_type', 'movie')
+      .order('popularity', { ascending: false })
+      .limit(1000);
+    dramas = data || [];
     return (
       <MoviesCatalogClient
         dramas={dramas}

@@ -98,8 +98,9 @@ const Navbar: React.FC<NavbarProps> = ({
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center space-x-6">
             <Link href="/" onClick={(e) => { e.preventDefault(); onNavigate('home'); }} className={navLinkClass('home')}>Home</Link>
-            <Link href="/series" onClick={(e) => { e.preventDefault(); onNavigate('series'); }} className={navLinkClass('series')}>Series</Link>
-            <Link href="/movies" onClick={(e) => { e.preventDefault(); onNavigate('films'); }} className={navLinkClass('films')}>Films</Link>
+            <Link href="/series" onClick={(e) => { e.preventDefault(); onNavigate('series'); }} className={navLinkClass('series')}>Dramas</Link>
+            <Link href="/anime" className={navLinkClass('series')}>Anime</Link>
+            <Link href="/movies" onClick={(e) => { e.preventDefault(); onNavigate('films'); }} className={navLinkClass('films')}>Movies</Link>
             <Link href="/people" onClick={(e) => { e.preventDefault(); onNavigate('people_catalog'); }} className={navLinkClass('people_catalog')}>Celebs</Link>
             <Link href="/mylist" onClick={(e) => { e.preventDefault(); onNavigate('mylist'); }} className={navLinkClass('mylist')}>My List</Link>
           </nav>
@@ -200,8 +201,9 @@ const Navbar: React.FC<NavbarProps> = ({
           </div>
           <nav className="flex-grow flex flex-col p-8 space-y-4">
             <Link href="/" onClick={(e) => { e.preventDefault(); onNavigate('home'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('home')}>Home</Link>
-            <Link href="/series" onClick={(e) => { e.preventDefault(); onNavigate('series'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('series')}>Series</Link>
-            <Link href="/movies" onClick={(e) => { e.preventDefault(); onNavigate('films'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('films')}>Films</Link>
+            <Link href="/series" onClick={(e) => { e.preventDefault(); onNavigate('series'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('series')}>Dramas</Link>
+            <Link href="/anime" onClick={() => setIsMobileMenuOpen(false)} className={mobileLinkClass('series')}>Anime</Link>
+            <Link href="/movies" onClick={(e) => { e.preventDefault(); onNavigate('films'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('films')}>Movies</Link>
             <Link href="/people" onClick={(e) => { e.preventDefault(); onNavigate('people_catalog'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('people_catalog')}>Celebs</Link>
             <Link href="/mylist" onClick={(e) => { e.preventDefault(); onNavigate('mylist'); setIsMobileMenuOpen(false); }} className={mobileLinkClass('mylist')}>My List</Link>
             <button onClick={() => { onSurpriseClick(); setIsMobileMenuOpen(false); }} className="text-xl font-medium text-yellow-500 py-2">🎲 Shuffle Pick</button>
