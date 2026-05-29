@@ -1,7 +1,6 @@
 import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
-import { fetchPublishedContent } from '@/services/contentService';
-import MoviesCatalogClient from '../MoviesCatalogClient';
+import SeriesCatalogClient from '../SeriesCatalogClient';
 
 export const metadata: Metadata = {
   title: 'Movies',
@@ -20,24 +19,33 @@ export default async function MoviesCatalogPage({
     const params = await searchParams;
     const { data } = await supabase
       .from('content')
-      .select('*')
+      .select(`
+        id, gdvg_id, title, content_type,
+        poster_path, vote_average, popularity,
+        origin_country, first_air_date,
+        release_date, genres, status
+      `)
       .eq('status', 'published')
       .eq('content_type', 'movie')
       .order('popularity', { ascending: false })
-      .limit(1000);
+      .range(0, 23);
     dramas = data || [];
     return (
-      <MoviesCatalogClient
+      <SeriesCatalogClient
         dramas={dramas}
         initialGenre={params.genre || null}
+        type="Movies"
+        contentTypeParam="movie"
       />
     );
   } catch (error) {
     console.warn('Movies catalog data fetch failed - Supabase may not be configured:', error);
     return (
-      <MoviesCatalogClient
+      <SeriesCatalogClient
         dramas={[]}
         initialGenre={null}
+        type="Movies"
+        contentTypeParam="movie"
       />
     );
   }

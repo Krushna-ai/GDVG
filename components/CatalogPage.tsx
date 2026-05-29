@@ -5,7 +5,7 @@ import type { Content, COUNTRY_CODES } from '../types';
 import { ChevronDownIcon, XIcon } from './icons';
 
 interface CatalogPageProps {
-  type: 'Series' | 'Movie';
+  type: string;
   dramas: Content[];
   onDramaClick: (drama: Content) => void;
   initialGenre?: string | null;
@@ -101,7 +101,7 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ type, dramas, onDramaClick, i
     <div className="min-h-screen bg-[#0b0b0b] pt-24 px-4 md:px-12 pb-20 animate-fadeIn">
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 md:mb-12 border-b border-gray-800 pb-6">
         <div className="flex items-baseline space-x-4 mb-4 md:mb-0">
-          <h1 className="text-3xl md:text-5xl font-bold text-white">{type === 'Series' ? 'TV Series' : 'Films'}</h1>
+          <h1 className="text-3xl md:text-5xl font-bold text-white">{type}</h1>
           <span className="text-gray-400 text-lg">{filteredDramas.length} Titles</span>
         </div>
 

@@ -1,6 +1,5 @@
 import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
-import { fetchPublishedContent } from '@/services/contentService';
 import SeriesCatalogClient from '../SeriesCatalogClient';
 
 export const metadata: Metadata = {
@@ -20,16 +19,23 @@ export default async function SeriesCatalogPage({
     const params = await searchParams;
     const { data } = await supabase
       .from('content')
-      .select('*')
+      .select(`
+        id, gdvg_id, title, content_type,
+        poster_path, vote_average, popularity,
+        origin_country, first_air_date,
+        release_date, genres, status
+      `)
       .eq('status', 'published')
       .in('content_type', ['tv', 'drama'])
       .order('popularity', { ascending: false })
-      .limit(1000);
+      .range(0, 23);
     dramas = data || [];
     return (
       <SeriesCatalogClient
         dramas={dramas}
         initialGenre={params.genre || null}
+        type="Dramas"
+        contentTypeParam="tv,drama"
       />
     );
   } catch (error) {
@@ -38,6 +44,8 @@ export default async function SeriesCatalogPage({
       <SeriesCatalogClient
         dramas={[]}
         initialGenre={null}
+        type="Dramas"
+        contentTypeParam="tv,drama"
       />
     );
   }

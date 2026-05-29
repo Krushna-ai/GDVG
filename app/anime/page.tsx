@@ -19,17 +19,23 @@ export default async function AnimeCatalogPage({
     const params = await searchParams;
     const { data } = await supabase
       .from('content')
-      .select('*')
+      .select(`
+        id, gdvg_id, title, content_type,
+        poster_path, vote_average, popularity,
+        origin_country, first_air_date,
+        release_date, genres, status
+      `)
       .eq('status', 'published')
       .eq('content_type', 'anime')
       .order('popularity', { ascending: false })
-      .limit(1000);
+      .range(0, 23);
     dramas = data || [];
     return (
       <SeriesCatalogClient
         dramas={dramas}
         initialGenre={params.genre || null}
         type="Anime"
+        contentTypeParam="anime"
       />
     );
   } catch (error) {
@@ -39,6 +45,7 @@ export default async function AnimeCatalogPage({
         dramas={[]}
         initialGenre={null}
         type="Anime"
+        contentTypeParam="anime"
       />
     );
   }
