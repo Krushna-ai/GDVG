@@ -12,11 +12,12 @@ interface Props {
   type?: string;
   contentTypeParam: string;
   // 'tv,drama' or 'movie' or 'anime'
+  totalCount?: number;
 }
 
 export default function SeriesCatalogClient({
   dramas, initialGenre, type = 'Dramas',
-  contentTypeParam
+  contentTypeParam, totalCount
 }: Props) {
   const router = useRouter();
   const [items, setItems] = useState(dramas);
@@ -50,6 +51,7 @@ export default function SeriesCatalogClient({
         dramas={items}
         onDramaClick={handleDramaClick}
         initialGenre={initialGenre}
+        totalCount={totalCount}
       />
       {hasMore && (
         <div className="flex justify-center py-8">

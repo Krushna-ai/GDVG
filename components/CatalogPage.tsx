@@ -9,9 +9,10 @@ interface CatalogPageProps {
   dramas: Content[];
   onDramaClick: (drama: Content) => void;
   initialGenre?: string | null;
+  totalCount?: number;
 }
 
-const CatalogPage: React.FC<CatalogPageProps> = ({ type, dramas, onDramaClick, initialGenre }) => {
+const CatalogPage: React.FC<CatalogPageProps> = ({ type, dramas, onDramaClick, initialGenre, totalCount }) => {
   const [selectedGenre, setSelectedGenre] = useState<string | null>(initialGenre || null);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [isGenreOpen, setIsGenreOpen] = useState(false);
@@ -102,7 +103,7 @@ const CatalogPage: React.FC<CatalogPageProps> = ({ type, dramas, onDramaClick, i
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 md:mb-12 border-b border-gray-800 pb-6">
         <div className="flex items-baseline space-x-4 mb-4 md:mb-0">
           <h1 className="text-3xl md:text-5xl font-bold text-white">{type}</h1>
-          <span className="text-gray-400 text-lg">{filteredDramas.length} Titles</span>
+          <span className="text-gray-400 text-lg">{totalCount ? `${totalCount.toLocaleString()} Titles` : `${filteredDramas.length} Titles`}</span>
         </div>
 
         <div className="flex space-x-4 z-30">
