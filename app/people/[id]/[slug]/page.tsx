@@ -1,13 +1,14 @@
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+
 import { notFound } from 'next/navigation';
 import { generatePeopleStaticParams } from '@/app/lib/staticParams';
 import { getPersonDetail, generatePersonMetadata, renderPersonJsonLd } from '@/app/lib/personDetailHelpers';
 import PersonDetailClient from '@/app/PersonDetailClient';
 import type { Metadata } from 'next';
 
-export const revalidate = 86400;
-
 export async function generateStaticParams() {
-  return generatePeopleStaticParams(1000);
+  return [];
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string; slug: string }> }): Promise<Metadata> {
