@@ -113,9 +113,16 @@ export async function POST(request: NextRequest) {
 
     const sliced = results.slice(0, limit);
 
+    // 4. People search — by name
+    const { data: peopleResults } = await supabase
+      .from('people')
+      .select('id, name, profile_path, known_for_department, gdvg_id')
+      .ilike('name', `%${query}%`)
+      .limit(5);
+
     return NextResponse.json({
       content: sliced,
-      people: [],
+      people: peopleResults || [],
       total: sliced.length,
       query,
       semantic,
