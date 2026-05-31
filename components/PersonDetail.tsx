@@ -78,7 +78,7 @@ const PersonDetail: React.FC<PersonDetailProps> = ({ person: initialPerson, onBa
 
                 <button
                     onClick={handleBack}
-                    className="absolute top-6 left-6 z-10 flex items-center space-x-2 text-gray-300 hover:text-white transition"
+                    className="absolute top-24 left-4 md:left-12 z-10 flex items-center space-x-2 text-gray-300 hover:text-white transition"
                 >
                     <ArrowLeftIcon /> <span>Back</span>
                 </button>
