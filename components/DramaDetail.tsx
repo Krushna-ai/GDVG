@@ -304,19 +304,23 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                                     {mainCast.slice(0, 8).map(cast => (
                                         <div
                                             key={cast.id}
-                                            className="bg-[#141414] rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-red-600 transition relative h-40"
+                                            className="bg-[#141414] rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-red-600 transition"
                                             onClick={() => cast.person && handlePerson(cast.person)}
                                         >
-                                            <SafeImage
-                                                src={getProfileUrl(cast.person?.profile_path) || PLACEHOLDER_PROFILE}
-                                                alt={cast.person?.name || 'Cast member'}
-                                                fill
-                                                className="object-cover object-top"
-                                                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
-                                            />
-                                            <div className="p-3">
-                                                <p className="text-white font-bold text-sm truncate">{cast.person?.name}</p>
-                                                <p className="text-gray-500 text-xs truncate">{cast.character_name || 'Main Role'}</p>
+                                            <div className="relative h-32">
+                                                <SafeImage
+                                                    src={getProfileUrl(cast.person?.profile_path) || PLACEHOLDER_PROFILE}
+                                                    alt={cast.person?.name || 'Cast member'}
+                                                    fill
+                                                    className="object-cover object-top"
+                                                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                                                />
+                                            </div>
+                                            <div className="p-2">
+                                                <p className="text-white font-bold text-[13px] truncate leading-tight">{cast.person?.name}</p>
+                                                {cast.character_name && (
+                                                    <p className="text-[#9ca3af] text-[11px] truncate leading-tight mt-0.5">{cast.character_name}</p>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -638,9 +642,13 @@ const DramaDetail: React.FC<DramaDetailProps> = ({
                                 )}
 
                                 <li className="flex justify-between border-b border-gray-800 pb-2"><span className="text-gray-500">Country</span><span className="text-white">{getCountry(drama)}</span></li>
-                                <li className="flex justify-between border-b border-gray-800 pb-2"><span className="text-gray-500">Episodes</span><span className="text-white">{drama.number_of_episodes || 'N/A'}</span></li>
+                                {drama.content_type !== 'movie' && (
+                                    <li className="flex justify-between border-b border-gray-800 pb-2"><span className="text-gray-500">Episodes</span><span className="text-white">{drama.number_of_episodes || 'N/A'}</span></li>
+                                )}
                                 <li className="flex justify-between border-b border-gray-800 pb-2"><span className="text-gray-500">Aired</span><span className="text-white">{getYear(drama)}</span></li>
-                                <li className="flex justify-between border-b border-gray-800 pb-2"><span className="text-gray-500">Network</span><span className="text-white">{getNetworkName(drama)}</span></li>
+                                {drama.content_type !== 'movie' && (
+                                    <li className="flex justify-between border-b border-gray-800 pb-2"><span className="text-gray-500">Network</span><span className="text-white">{getNetworkName(drama)}</span></li>
+                                )}
                                 <li className="flex justify-between border-b border-gray-800 pb-2"><span className="text-gray-500">Runtime</span><span className="text-white">{drama.runtime ? `${drama.runtime} min` : 'N/A'}</span></li>
                             </ul>
 
