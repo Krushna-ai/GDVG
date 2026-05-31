@@ -26,15 +26,7 @@ const nextConfig = {
     unoptimized: false,
   },
   trailingSlash: false,
-  async redirects() {
-    return [
-      {
-        source: '/sitemap.xml',
-        destination: '/api/sitemap',
-        permanent: false,
-      },
-    ];
-  },
+
 };
 
 export default nextConfig;
