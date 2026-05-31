@@ -6,9 +6,28 @@ export function buildContentJsonLd(content: Content) {
     ? `https://image.tmdb.org/t/p/w500${content.poster_path}`
     : undefined;
 
+  const prefix =
+    content.content_type === 'movie' ? 'movies' :
+    content.content_type === 'anime' ? 'anime' :
+    content.content_type === 'drama' ? 'drama' :
+    'series';
+
+  const slug = content.title
+    ? content.title.toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .substring(0, 50)
+    : '';
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gdvg-ten.vercel.app';
+  const canonicalUrl = slug
+    ? `${siteUrl}/${prefix}/${content.gdvg_id}/${slug}`
+    : `${siteUrl}/${prefix}/${content.gdvg_id}`;
+
   const jsonLd: any = {
     '@context': 'https://schema.org',
     '@type': isMovie ? 'Movie' : 'TVSeries',
+    url: canonicalUrl,
     name: content.title,
     description: content.overview,
     image: posterUrl,
